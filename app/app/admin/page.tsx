@@ -27,7 +27,6 @@ export default async function AdminPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="text-lg font-medium">Admin · Bots</div>
-      {/* @ts-expect-error Async Server Component */}
       <BotsTable />
     </div>
   );

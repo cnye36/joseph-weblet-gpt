@@ -19,23 +19,29 @@ export async function POST(req: Request) {
   
 
   // Normalize any incoming UI message shapes into simple text-only CoreMessage[]
-  const coreMessages: CoreMessage[] = (Array.isArray(messages) ? messages : []).map((m: any) => {
-    const parts: unknown = (m && Array.isArray(m.parts))
-      ? m.parts
-      : (m && Array.isArray(m.content))
+  const coreMessages: CoreMessage[] = (
+    Array.isArray(messages) ? messages : []
+  ).map((m: { parts?: unknown; content?: unknown; role?: string }) => {
+    const parts: unknown =
+      m && Array.isArray(m.parts)
+        ? m.parts
+        : m && Array.isArray(m.content)
         ? m.content
         : undefined;
     const textFromParts = Array.isArray(parts)
       ? parts
-          .map((p: any) => {
-            if (p && p.type === 'text' && typeof p.text === 'string') return p.text;
-            if (p && p.type === 'image') return '[image attached]';
-            return '';
+          .map((p: { type: string; text?: string }) => {
+            if (p && p.type === "text" && typeof p.text === "string")
+              return p.text;
+            if (p && p.type === "image") return "[image attached]";
+            return "";
           })
           .filter((s: string) => s.length > 0)
-          .join('\n')
-      : (typeof m?.content === 'string' ? m.content : '');
-    return { role: m?.role ?? 'user', content: textFromParts } as CoreMessage;
+          .join("\n")
+      : typeof m?.content === "string"
+      ? m.content
+      : "";
+    return { role: m?.role ?? "user", content: textFromParts } as CoreMessage;
   });
 
   const result = await streamText({
