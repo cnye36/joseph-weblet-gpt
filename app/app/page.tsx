@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/admin";
 import { bots as staticBots } from "@/lib/bots";
 
 export default async function AppDashboard() {
   const supabase = await createClient();
+  const admin = await isAdmin();
   const { data } = await supabase
     .from("bots")
     .select("id, name, description, system")
@@ -45,6 +47,14 @@ export default async function AppDashboard() {
           </Link>
         ))}
       </div>
+      {admin && (
+        <Link
+          href="/app/admin"
+          className="fixed left-4 bottom-4 text-xs underline px-2 py-1 rounded border bg-background"
+        >
+          Admin
+        </Link>
+      )}
     </div>
   );
 }

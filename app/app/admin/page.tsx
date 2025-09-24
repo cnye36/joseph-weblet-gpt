@@ -9,6 +9,11 @@ async function BotsTable() {
     .select("id, name, description, model, temperature");
   return (
     <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Link href="/app/admin/bots/new" className="text-sm underline">
+          Add GPT
+        </Link>
+      </div>
       <form
         action="/app/admin/seed"
         method="post"
@@ -32,35 +37,31 @@ async function BotsTable() {
         </form>
       )}
       {data?.map((b) => (
-        <div
-          key={b.id}
-          className="flex items-center justify-between border p-3 rounded"
-        >
-          <div>
-            <div className="font-medium">{b.name}</div>
-            <div className="text-xs text-muted-foreground">
-              {b.id} · {b.model}
-            </div>
-            {b.description ? (
-              <div className="text-xs text-muted-foreground line-clamp-1">
-                {b.description}
+        <Link key={b.id} href={`/app/admin/bots/${b.id}`} className="block">
+          <div className="flex items-center justify-between border p-3 rounded hover:bg-muted/40">
+            <div>
+              <div className="font-medium">{b.name}</div>
+              <div className="text-xs text-muted-foreground">
+                {b.id} · {b.model}
               </div>
-            ) : null}
+              {b.description ? (
+                <div className="text-xs text-muted-foreground line-clamp-1">
+                  {b.description}
+                </div>
+              ) : null}
+            </div>
+            <div className="text-xs text-muted-foreground">Click to edit</div>
           </div>
-          <Link className="text-sm underline" href={`/app/admin/bots/${b.id}`}>
-            Edit
-          </Link>
-        </div>
+        </Link>
       ))}
     </div>
   );
 }
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams?: { synced?: string; saved?: string };
+export default async function AdminPage(props: {
+  searchParams?: Promise<{ synced?: string; saved?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   if (!(await isAdmin())) {
     return <div className="p-6">Forbidden</div>;
   }

@@ -2,11 +2,12 @@ import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import { openrouter } from "@/lib/openrouter";
 
-export default async function BotAdminDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function BotAdminDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   if (!(await isAdmin())) {
     return <div className="p-6">Forbidden</div>;
   }
