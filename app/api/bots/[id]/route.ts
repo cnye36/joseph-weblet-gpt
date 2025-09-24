@@ -5,8 +5,10 @@ import { isAdmin } from "@/lib/admin";
 
 const UpdateSchema = z.object({
   name: z.string().min(1),
+  description: z.string().default(""),
   model: z.string().min(1),
   system: z.string().min(1),
+  temperature: z.number().min(0).max(2).default(1),
 });
 
 export async function GET(
@@ -17,7 +19,7 @@ export async function GET(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("bots")
-    .select("id, name, model, system")
+    .select("id, name, description, model, system, temperature")
     .eq("id", id)
     .maybeSingle();
   if (error)
@@ -38,9 +40,15 @@ export async function PATCH(
   const body = UpdateSchema.parse(json);
   const { data, error } = await supabase
     .from("bots")
-    .update({ name: body.name, model: body.model, system: body.system })
+    .update({
+      name: body.name,
+      description: body.description,
+      model: body.model,
+      system: body.system,
+      temperature: body.temperature,
+    })
     .eq("id", id)
-    .select("id, name, model, system")
+    .select("id, name, description, model, system, temperature")
     .maybeSingle();
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });

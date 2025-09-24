@@ -1,10 +1,23 @@
-"use client";
-
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { bots } from "@/lib/bots";
+import { createClient } from "@/lib/supabase/server";
+import { bots as staticBots } from "@/lib/bots";
 
-export default function AppDashboard() {
+export default async function AppDashboard() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("bots")
+    .select("id, name, description, system")
+    .order("id");
+  const list =
+    data && data.length > 0
+      ? data
+      : Object.values(staticBots).map((b) => ({
+          id: b.id,
+          name: b.name,
+          description: "",
+          system: b.system,
+        }));
   return (
     <div className="p-6">
       <header className="max-w-5xl mx-auto mb-6 flex items-center justify-between">
@@ -14,15 +27,19 @@ export default function AppDashboard() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Weblet GPT</h1>
         </div>
-        <span className="text-sm text-muted-foreground">Choose an assistant to get started</span>
+        <span className="text-sm text-muted-foreground">
+          Choose an assistant to get started
+        </span>
       </header>
       <div className="max-w-5xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {Object.values(bots).map((b) => (
+        {list.map((b) => (
           <Link key={b.id} href={`/app/chat/${b.id}`} className="block">
             <Card className="hover:shadow-md transition-shadow h-full">
               <CardContent className="p-5 space-y-2">
                 <div className="font-medium">{b.name}</div>
-                <div className="text-sm text-muted-foreground line-clamp-2">{b.system}</div>
+                <div className="text-sm text-muted-foreground line-clamp-2">
+                  {b.description || b.system}
+                </div>
               </CardContent>
             </Card>
           </Link>
@@ -31,5 +48,3 @@ export default function AppDashboard() {
     </div>
   );
 }
-
-

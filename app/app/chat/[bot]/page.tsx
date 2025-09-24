@@ -1,25 +1,56 @@
 import { bots, defaultBotId, type BotId } from "@/lib/bots";
+import { createClient } from "@/lib/supabase/server";
 import Chat from "@/components/chat/Chat";
 import Sidebar from "@/components/sidebar/Sidebar";
 import { redirect } from "next/navigation";
 
-export default function ChatBotScopedPage({ params, searchParams }: { params: { bot: string }, searchParams: { chat?: string } }) {
-  const rawBot = params.bot || "";
-  const selectedBot = (rawBot && rawBot in bots ? (rawBot as BotId) : defaultBotId);
+export default async function ChatBotScopedPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ bot: string }>;
+  searchParams: Promise<{ chat?: string }>;
+}) {
+  const { bot: rawBot } = await params;
+  const { chat: chatParam } = await searchParams;
+  const selectedBot =
+    rawBot && rawBot in bots ? (rawBot as BotId) : defaultBotId;
   if (!(rawBot in bots)) {
-    const to = `/app/chat/${selectedBot}${searchParams.chat ? `?chat=${searchParams.chat}` : ""}`;
+    const to = `/app/chat/${selectedBot}${
+      chatParam ? `?chat=${chatParam}` : ""
+    }`;
     redirect(to);
   }
-  const chatId = searchParams.chat ?? null;
+  const chatId = chatParam ?? null;
   const bot = bots[selectedBot];
 
   return (
     <div className="grid grid-cols-[280px_1fr] min-h-svh">
       <Sidebar selectedBot={selectedBot} />
       <div className="flex flex-col h-svh">
-        <div className="border-b px-4 py-3 text-sm">{bot.name}</div>
+        <BotHeader botId={selectedBot} fallbackName={bot.name} />
         <Chat botId={selectedBot} chatId={chatId} />
       </div>
+    </div>
+  );
+}
+
+async function BotHeader({
+  botId,
+  fallbackName,
+}: {
+  botId: BotId;
+  fallbackName: string;
+}) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("bots")
+    .select("name")
+    .eq("id", botId)
+    .maybeSingle();
+  return (
+    <div className="border-b px-4 py-3 text-sm">
+      {data?.name ?? fallbackName}
     </div>
   );
 }
