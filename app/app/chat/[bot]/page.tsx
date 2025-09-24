@@ -1,7 +1,8 @@
 import { bots, defaultBotId, type BotId } from "@/lib/bots";
 import { createClient } from "@/lib/supabase/server";
 import Chat from "@/components/chat/Chat";
-import Sidebar from "@/components/sidebar/Sidebar";
+import AppSidebar from "@/components/sidebar/AppSidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
 
 export default async function ChatBotScopedPage({
@@ -25,13 +26,15 @@ export default async function ChatBotScopedPage({
   const bot = bots[selectedBot];
 
   return (
-    <div className="grid grid-cols-[280px_1fr] min-h-svh">
-      <Sidebar selectedBot={selectedBot} />
-      <div className="flex flex-col h-svh">
-        <BotHeader botId={selectedBot} fallbackName={bot.name} />
-        <Chat botId={selectedBot} chatId={chatId} />
-      </div>
-    </div>
+    <SidebarProvider>
+      <AppSidebar selectedBot={selectedBot} />
+      <SidebarInset>
+        <div className="flex flex-col h-svh">
+          <BotHeader botId={selectedBot} fallbackName={bot.name} />
+          <Chat botId={selectedBot} chatId={chatId} />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
 

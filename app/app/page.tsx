@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { bots as staticBots } from "@/lib/bots";
+import LogoutButton from "@/components/sidebar/LogoutButton";
 
 export default async function AppDashboard() {
   const supabase = await createClient();
@@ -29,9 +30,12 @@ export default async function AppDashboard() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Weblet GPT</h1>
         </div>
-        <span className="text-sm text-muted-foreground">
-          Choose an assistant to get started
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground hidden sm:inline">
+            Choose an assistant to get started
+          </span>
+          <LogoutButton />
+        </div>
       </header>
       <div className="max-w-5xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((b) => (

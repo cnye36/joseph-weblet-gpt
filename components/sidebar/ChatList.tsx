@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/server";
 import NewChatButton from "@/components/sidebar/NewChatButton";
 import { bots, defaultBotId, type BotId } from "@/lib/bots";
+import ChatListItemActions from "@/components/sidebar/ChatListItemActions";
 
 export default async function ChatList({ selectedBot }: { selectedBot?: BotId }) {
   const supabase = await createClient();
@@ -24,7 +25,14 @@ export default async function ChatList({ selectedBot }: { selectedBot?: BotId })
       <NewChatButton />
       <Separator className="my-2" />
       {data?.map((c) => (
-        <Link key={c.id} href={`/app/chat/${c.bot_id}?chat=${c.id}`} className="block">{c.title}</Link>
+        <div key={c.id} className="flex items-center justify-between group">
+          <Link href={`/app/chat/${c.bot_id}?chat=${c.id}`} className="block truncate flex-1 pr-2">
+            {c.title}
+          </Link>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <ChatListItemActions chatId={c.id} botId={c.bot_id} title={c.title} />
+          </div>
+        </div>
       ))}
     </nav>
   );
