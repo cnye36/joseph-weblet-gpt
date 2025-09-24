@@ -16,10 +16,19 @@ export const createClient = async () => {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // In Server Components, Next.js disallows setting cookies.
+            // It's safe to ignore since Supabase will attempt again in a Route Handler/Action.
+          }
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
+          try {
+            cookieStore.set({ name, value: "", ...options });
+          } catch {
+            // See comment above in set().
+          }
         },
       },
     },
