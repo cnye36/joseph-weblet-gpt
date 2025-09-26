@@ -45,6 +45,12 @@
 
 :root {
   --radius: 0.625rem;
+  /* Brand gradient stops inspired by provided site: purple → indigo → blue */
+  --brand-from: oklch(0.51 0.25 315);
+  --brand-via: oklch(0.55 0.20 280);
+  --brand-to: oklch(0.62 0.17 250);
+
+  /* Light theme base colors */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -63,6 +69,8 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Utility gradient tokens */
+  --gradient: linear-gradient(135deg, var(--brand-from), var(--brand-via) 40%, var(--brand-to));
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -118,5 +126,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Light surface; gradients used as accents, not full-page background */
+    background-image: none;
   }
 }

@@ -22,7 +22,6 @@ export default function SignupForm() {
       setError("Passwords do not match");
       return;
     }
-    const currentEmail = email;
     startTransition(async () => {
       const res = await signUpAction(email, password);
       if (res.ok) {

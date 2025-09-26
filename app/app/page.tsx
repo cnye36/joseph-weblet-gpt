@@ -3,11 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { bots as staticBots } from "@/lib/bots";
-import LogoutButton from "@/components/sidebar/LogoutButton";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import MainSidebar from "@/components/sidebar/MainSidebar";
 
 export default async function AppDashboard() {
   const supabase = await createClient();
-  const admin = await isAdmin();
+  await isAdmin();
   const { data } = await supabase
     .from("bots")
     .select("id, name, description, system")
@@ -22,43 +23,46 @@ export default async function AppDashboard() {
           system: b.system,
         }));
   return (
-    <div className="p-6">
-      <header className="max-w-5xl mx-auto mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="size-8 rounded bg-primary/15 flex items-center justify-center">
-            <span className="font-bold text-primary">W</span>
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Weblet GPT</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground hidden sm:inline">
-            Choose an assistant to get started
-          </span>
-          <LogoutButton />
-        </div>
-      </header>
-      <div className="max-w-5xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {list.map((b) => (
-          <Link key={b.id} href={`/app/chat/${b.id}`} className="block">
-            <Card className="hover:shadow-md transition-shadow h-full">
-              <CardContent className="p-5 space-y-2">
-                <div className="font-medium">{b.name}</div>
-                <div className="text-sm text-muted-foreground line-clamp-2">
-                  {b.description || b.system}
+    <SidebarProvider>
+      <MainSidebar />
+      <SidebarInset>
+        <div className="p-8">
+          <header className="max-w-5xl mx-auto mb-8">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-neutral-900 mb-2">
+                Choose Your AI Assistant
+              </h1>
+              <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+                Select from our collection of specialized GPTs designed for your
+                specific domain and workflow needs.
+              </p>
+            </div>
+          </header>
+          <div className="max-w-5xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((b) => (
+              <Link
+                key={b.id}
+                href={`/app/chat/${b.id}`}
+                className="block group h-full"
+              >
+                <div className="relative rounded-xl p-[2px] bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400 transition-all duration-300 hover:scale-105 h-full">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm"></div>
+                  <Card className="relative bg-white border-white/0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl h-full flex flex-col">
+                    <CardContent className="p-6 space-y-3 flex-1 flex flex-col">
+                      <div className="font-semibold text-lg text-neutral-900">
+                        {b.name}
+                      </div>
+                      <div className="text-sm text-neutral-600 line-clamp-3 leading-relaxed flex-1">
+                        {b.description || b.system}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-      {admin && (
-        <Link
-          href="/app/admin"
-          className="fixed left-4 bottom-4 text-xs underline px-2 py-1 rounded border bg-background"
-        >
-          Admin
-        </Link>
-      )}
-    </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

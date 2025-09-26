@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+// Header and Footer only on homepage, not in app
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
