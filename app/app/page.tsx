@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
@@ -11,7 +12,7 @@ export default async function AppDashboard() {
   await isAdmin();
   const { data } = await supabase
     .from("bots")
-    .select("id, name, description, system")
+    .select("id, name, description, system, avatar_url")
     .order("id");
   const list =
     data && data.length > 0
@@ -21,6 +22,7 @@ export default async function AppDashboard() {
           name: b.name,
           description: "",
           system: b.system,
+          avatar_url: null,
         }));
   return (
     <SidebarProvider>
@@ -49,8 +51,23 @@ export default async function AppDashboard() {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm"></div>
                   <Card className="relative bg-white border-white/0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl h-full flex flex-col">
                     <CardContent className="p-6 space-y-3 flex-1 flex flex-col">
-                      <div className="font-semibold text-lg text-neutral-900">
-                        {b.name}
+                      <div className="flex items-center space-x-3">
+                        {b.avatar_url ? (
+                          <Image
+                            src={b.avatar_url}
+                            alt={`${b.name} avatar`}
+                            width={48}
+                            height={48}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                            {b.name.charAt(0)}
+                          </div>
+                        )}
+                        <div className="font-semibold text-lg text-neutral-900 flex-1">
+                          {b.name}
+                        </div>
                       </div>
                       <div className="text-sm text-neutral-600 line-clamp-3 leading-relaxed flex-1">
                         {b.description || b.system}

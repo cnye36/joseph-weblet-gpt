@@ -1,12 +1,11 @@
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import { openrouter } from "@/lib/openrouter";
+import AvatarManager from "./AvatarManager";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
-export default async function BotAdminDetailPage(
-  props: {
-    params: Promise<{ id: string }>;
-  }
-) {
+export default async function BotAdminDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   if (!(await isAdmin())) {
     return <div className="p-6">Forbidden</div>;
@@ -14,7 +13,7 @@ export default async function BotAdminDetailPage(
   const supabase = await createClient();
   const { data } = await supabase
     .from("bots")
-    .select("id, name, description, model, system, temperature")
+    .select("id, name, description, model, system, temperature, avatar_url")
     .eq("id", params.id)
     .maybeSingle();
   if (!data) return <div className="p-6">Not found</div>;
@@ -39,7 +38,26 @@ export default async function BotAdminDetailPage(
   } catch {}
   return (
     <div className="p-6 max-w-3xl">
-      <div className="text-lg font-medium mb-4">Edit Bot</div>
+      <div className="flex items-center gap-4 mb-6">
+        <Link
+          href="/app/admin"
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Admin
+        </Link>
+        <div className="text-lg font-medium">Edit Bot</div>
+      </div>
+
+      {/* Avatar Management Section - Moved to top */}
+      <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+        <AvatarManager
+          botId={data.id}
+          currentAvatarUrl={data.avatar_url}
+          botName={data.name}
+        />
+      </div>
+
       <form
         className="space-y-4"
         action={`/app/admin/bots/${params.id}/update`}
@@ -114,6 +132,7 @@ export default async function BotAdminDetailPage(
             defaultValue={data.temperature ?? 1}
           />
         </div>
+
         <div className="flex gap-2">
           <button
             className="px-3 py-2 rounded border"

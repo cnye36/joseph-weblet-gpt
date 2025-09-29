@@ -5,6 +5,7 @@ import ChatSidebar from "@/components/sidebar/ChatSidebar";
 import MainSidebar from "@/components/sidebar/MainSidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 
 export default async function ChatBotScopedPage({
   params,
@@ -32,9 +33,11 @@ export default async function ChatBotScopedPage({
       <SidebarInset>
         <div className="flex h-svh">
           <ChatSidebar selectedBot={selectedBot} />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             <BotHeader botId={selectedBot} fallbackName={bot.name} />
-            <Chat botId={selectedBot} chatId={chatId} />
+            <div className="flex-1 min-h-0">
+              <Chat botId={selectedBot} chatId={chatId} />
+            </div>
           </div>
         </div>
       </SidebarInset>
@@ -52,12 +55,25 @@ async function BotHeader({
   const supabase = await createClient();
   const { data } = await supabase
     .from("bots")
-    .select("name")
+    .select("name, avatar_url")
     .eq("id", botId)
     .maybeSingle();
   return (
-    <div className="border-b px-4 py-3 text-sm">
-      {data?.name ?? fallbackName}
+    <div className="border-b px-4 py-3 text-sm flex items-center space-x-3">
+      {data?.avatar_url ? (
+        <Image
+          src={data.avatar_url}
+          alt={`${data.name || fallbackName} avatar`}
+          width={32}
+          height={32}
+          className="w-8 h-8 rounded-full object-cover border border-gray-200"
+        />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+          {(data?.name || fallbackName).charAt(0)}
+        </div>
+      )}
+      <span>{data?.name ?? fallbackName}</span>
     </div>
   );
 }

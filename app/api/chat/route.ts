@@ -1,8 +1,9 @@
 import { openrouter } from '@/lib/openrouter';
 import { bots, type BotId, defaultBotId } from '@/lib/bots';
 import { createClient } from "@/lib/supabase/server";
-import { streamText, type CoreMessage } from "ai";
+import { streamText, type CoreMessage, experimental_createMCPClient } from "ai";
 import { z } from "zod";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const BodySchema = z.object({
   botId: z.custom<BotId>().optional(),
@@ -10,13 +11,18 @@ const BodySchema = z.object({
   messages: z.array(
     z.object({ role: z.enum(["user", "assistant", "system"]) }).passthrough()
   ),
+  enableMCP: z.boolean().optional(),
 });
 
 export const runtime = "edge";
 
 export async function POST(req: Request) {
   const json = await req.json();
-  const { botId = defaultBotId, messages } = BodySchema.parse(json);
+  const {
+    botId = defaultBotId,
+    messages,
+    enableMCP = false,
+  } = BodySchema.parse(json);
   // Load bot config from DB, fallback to static lib
   let bot = bots[botId];
   try {
@@ -68,10 +74,37 @@ export async function POST(req: Request) {
     return `openai/${raw}`; // best-effort default provider
   })();
 
+  let mcpClient:
+    | Awaited<ReturnType<typeof experimental_createMCPClient>>
+    | undefined;
+  let tools = {};
+
+  // Initialize MCP client if enabled
+  if (enableMCP) {
+    try {
+      const arxivUrl = new URL(
+        "https://arxiv-mcp-server-vdui.onrender.com/mcp"
+      );
+      mcpClient = await experimental_createMCPClient({
+        transport: new StreamableHTTPClientTransport(arxivUrl, {
+          sessionId: `session_${Date.now()}`,
+        }),
+      });
+
+      // Get tools from MCP server
+      const mcpTools = await mcpClient.tools();
+      tools = mcpTools;
+    } catch (error) {
+      console.error("Failed to initialize MCP client:", error);
+      // Continue without MCP tools if initialization fails
+    }
+  }
+
   const result = await streamText({
     model: openrouter(modelSlug),
     system: bot.system,
     messages: coreMessages,
+    tools: Object.keys(tools).length > 0 ? tools : undefined,
     temperature: ((): number | undefined => {
       const maybe = (bot as unknown as { temperature?: unknown }).temperature;
       return typeof maybe === "number" ? maybe : undefined;
@@ -86,6 +119,27 @@ export async function POST(req: Request) {
       // OpenRouter best-practice headers
       "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL,
       "X-Title": "Joseph Weblet Chat",
+    },
+    onFinish: async () => {
+      // Close MCP client after streaming is complete
+      if (mcpClient) {
+        try {
+          await mcpClient.close();
+        } catch (error) {
+          console.error("Error closing MCP client:", error);
+        }
+      }
+    },
+    onError: async (error) => {
+      // Close MCP client on error
+      if (mcpClient) {
+        try {
+          await mcpClient.close();
+        } catch (closeError) {
+          console.error("Error closing MCP client:", closeError);
+        }
+      }
+      console.error("Stream error:", error);
     },
   });
 
