@@ -1,11 +1,14 @@
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
-import { openrouter } from "@/lib/openrouter";
 import AvatarManager from "./AvatarManager";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import DeleteBotButton from "./DeleteBotButton";
+import TemperatureSlider from "./TemperatureSlider";
 
-export default async function BotAdminDetailPage(props: { params: Promise<{ id: string }> }) {
+export default async function BotAdminDetailPage(props: {
+  params: Promise<{ id: string }>;
+}) {
   const params = await props.params;
   if (!(await isAdmin())) {
     return <div className="p-6">Forbidden</div>;
@@ -122,15 +125,7 @@ export default async function BotAdminDetailPage(props: { params: Promise<{ id: 
         </div>
         <div>
           <label className="block text-sm mb-1">Temperature</label>
-          <input
-            name="temperature"
-            type="number"
-            min={0}
-            max={2}
-            step={0.1}
-            className="w-full border rounded px-3 py-2"
-            defaultValue={data.temperature ?? 1}
-          />
+          <TemperatureSlider defaultValue={data.temperature ?? 0.7} />
         </div>
 
         <div className="flex gap-2">
@@ -140,6 +135,7 @@ export default async function BotAdminDetailPage(props: { params: Promise<{ id: 
           >
             Save
           </button>
+          <DeleteBotButton botId={params.id} />
         </div>
       </form>
     </div>

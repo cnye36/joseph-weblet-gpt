@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/admin";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
+import DeleteBotButton from "./DeleteBotButton";
 
 async function BotsTable() {
   const supabase = await createClient();
@@ -39,47 +40,54 @@ async function BotsTable() {
         </form>
       )}
       {data?.map((b) => (
-        <Link key={b.id} href={`/app/admin/bots/${b.id}`} className="block">
-          <div className="flex items-center justify-between border p-3 rounded hover:bg-muted/40">
-            <div className="flex items-center gap-3 flex-1">
-              {/* Avatar */}
-              {b.avatar_url ? (
-                <Image
-                  src={b.avatar_url}
-                  alt={`${b.name} avatar`}
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                  {b.name.charAt(0)}
-                </div>
-              )}
-
-              {/* Bot Info */}
-              <div className="flex-1 min-w-0">
-                <div className="font-medium">{b.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {b.id} · {b.model}
-                </div>
-                {b.description ? (
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {b.description}
-                  </div>
-                ) : null}
+        <div
+          key={b.id}
+          className="flex items-center justify-between border p-3 rounded hover:bg-muted/40"
+        >
+          <Link
+            href={`/app/admin/bots/${b.id}`}
+            className="flex items-center gap-3 flex-1"
+          >
+            {/* Avatar */}
+            {b.avatar_url ? (
+              <Image
+                src={b.avatar_url}
+                alt={`${b.name} avatar`}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                {b.name.charAt(0)}
               </div>
+            )}
+
+            {/* Bot Info */}
+            <div className="flex-1 min-w-0">
+              <div className="font-medium">{b.name}</div>
+              <div className="text-xs text-muted-foreground">
+                {b.id} · {b.model}
+              </div>
+              {b.description ? (
+                <div className="text-xs text-muted-foreground line-clamp-1">
+                  {b.description}
+                </div>
+              ) : null}
             </div>
+          </Link>
+          <div className="flex items-center gap-2">
             <div className="text-xs text-muted-foreground">Click to edit</div>
+            <DeleteBotButton botId={b.id} botName={b.name} />
           </div>
-        </Link>
+        </div>
       ))}
     </div>
   );
 }
 
 export default async function AdminPage(props: {
-  searchParams?: Promise<{ synced?: string; saved?: string }>;
+  searchParams?: Promise<{ synced?: string; saved?: string; deleted?: string }>;
 }) {
   const searchParams = await props.searchParams;
   if (!(await isAdmin())) {
@@ -105,6 +113,11 @@ export default async function AdminPage(props: {
       {searchParams?.saved === "1" && (
         <div className="border rounded p-3 text-sm bg-green-50 text-green-800">
           Bot saved successfully.
+        </div>
+      )}
+      {searchParams?.deleted === "1" && (
+        <div className="border rounded p-3 text-sm bg-red-50 text-red-800">
+          Bot deleted successfully.
         </div>
       )}
       <BotsTable />
