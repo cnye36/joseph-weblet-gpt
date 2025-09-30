@@ -180,12 +180,32 @@ export default function Chat({
                       if (part.type === "file") {
                         const file = (part as { type: "file"; file: { name: string; type: string; size: number } }).file;
                         return (
-                          <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted rounded-md border text-sm">
-                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          <div
+                            key={idx}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted rounded-md border text-sm"
+                          >
+                            <svg
+                              className="w-4 h-4 text-muted-foreground"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                              />
                             </svg>
-                            <span className="font-medium truncate max-w-xs" title={file.name}>{file.name}</span>
-                            <span className="text-xs text-muted-foreground">({Math.ceil(file.size / 1024)} KB)</span>
+                            <span
+                              className="font-medium truncate max-w-xs text-foreground"
+                              title={file.name}
+                            >
+                              {file.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ({Math.ceil(file.size / 1024)} KB)
+                            </span>
                           </div>
                         );
                       }
