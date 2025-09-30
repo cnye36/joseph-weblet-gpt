@@ -1,0 +1,11 @@
+[
+    { "task": "Literature Review", "start": "2025-10-01", "end": "2025-10-14" },
+    { "task": "Hypothesis Development", "start": "2025-10-15", "end": "2025-10-21", "dependsOn": ["Literature Review"] },
+    { "task": "Experimental Design", "start": "2025-10-22", "end": "2025-11-04", "dependsOn": ["Hypothesis Development"] },
+    { "task": "Lab Setup & Calibration", "start": "2025-11-05", "end": "2025-11-11", "dependsOn": ["Experimental Design"] },
+    { "task": "Data Collection", "start": "2025-11-12", "end": "2025-12-10", "dependsOn": ["Lab Setup & Calibration"] },
+    { "task": "Data Analysis", "start": "2025-12-11", "end": "2025-12-24", "dependsOn": ["Data Collection"] },
+    { "task": "Manuscript Writing", "start": "2025-12-26", "end": "2026-01-15", "dependsOn": ["Data Analysis"] },
+    { "task": "Peer Review & Revisions", "start": "2026-01-16", "end": "2026-02-10", "dependsOn": ["Manuscript Writing"] }
+  ]
+  

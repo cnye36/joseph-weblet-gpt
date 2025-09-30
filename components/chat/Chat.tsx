@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { UIMessage, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,8 +23,10 @@ export default function Chat({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const chatIdRef = useRef<string | null>(chatId);
   const [enableMCP, setEnableMCP] = useState(false);
+  const isNewChat = searchParams.get('new') === 'true';
   useEffect(() => {
     chatIdRef.current = chatId;
   }, [chatId]);
@@ -146,6 +148,7 @@ export default function Chat({
                       type UIInlinePart =
                         | { type: "text"; text: string }
                         | { type: "image"; image: string }
+                        | { type: "file"; file: { name: string; type: string; size: number } }
                         | { type: string };
                       const part = p as unknown as UIInlinePart;
                       if (part.type === "text") {
@@ -174,6 +177,18 @@ export default function Chat({
                           </div>
                         );
                       }
+                      if (part.type === "file") {
+                        const file = (part as { type: "file"; file: { name: string; type: string; size: number } }).file;
+                        return (
+                          <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted rounded-md border text-sm">
+                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span className="font-medium truncate max-w-xs" title={file.name}>{file.name}</span>
+                            <span className="text-xs text-muted-foreground">({Math.ceil(file.size / 1024)} KB)</span>
+                          </div>
+                        );
+                      }
                       return null;
                     });
                   })()}
@@ -181,6 +196,24 @@ export default function Chat({
               </div>
             </div>
           ))}
+          {/* Loading indicator when AI is thinking */}
+          {(status === "streaming" || status === "submitted") && (
+            <div className="flex gap-4 px-4 py-6">
+              <div className="size-8 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-medium text-primary">AI</span>
+              </div>
+              <div className="flex-1 space-y-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="border-t bg-background">
@@ -191,6 +224,8 @@ export default function Chat({
             const text = input.trim();
             if (!text && attachments.length === 0) return;
             let currentChatId = chatId;
+            let shouldGenerateTitle = false;
+            
             if (!currentChatId) {
               const res = await fetch("/api/chats", {
                 method: "POST",
@@ -201,7 +236,16 @@ export default function Chat({
               currentChatId = data.id;
               chatIdRef.current = currentChatId;
               router.replace(`/app/chat/${botId}?chat=${currentChatId}`);
-              // generate a short title (optional, best-effort)
+              shouldGenerateTitle = true;
+            } else if (isNewChat) {
+              // This is a new chat created via "New Chat" button - generate title
+              shouldGenerateTitle = true;
+              // Remove the new=true parameter
+              router.replace(`/app/chat/${botId}?chat=${currentChatId}`);
+            }
+            
+            // Generate title if needed
+            if (shouldGenerateTitle) {
               try {
                 const tRes = await fetch("/api/chats/title", {
                   method: "POST",
@@ -220,6 +264,38 @@ export default function Chat({
                 }
               } catch {}
             }
+            const messageParts: Array<
+              { type: "text"; text: string } | { type: "image"; image: string } | { type: "file"; file: { name: string; type: string; size: number; content?: string } }
+            > = [];
+            if (text) messageParts.push({ type: "text", text });
+            
+            // Add file attachments
+            for (const a of attachments) {
+              if (a.type.startsWith("image/") && a.dataUrl) {
+                messageParts.push({ type: "image", image: a.dataUrl });
+                continue;
+              }
+              
+              // For non-image files, send file content to AI but keep separate from user message
+              const header = `Attachment: ${a.name} (${a.type || "file"})`;
+              const body =
+                a.textContent && a.textContent.trim().length > 0
+                  ? `\n\n${a.textContent}`
+                  : `\n\n[Binary document attached. Name: ${a.name}; MIME: ${a.type}; Size: ${a.size} bytes]. If needed, ask the user for a text version or a public link.`;
+              
+              // Store file metadata separately
+              messageParts.push({
+                type: "file" as const,
+                file: {
+                  name: a.name,
+                  type: a.type,
+                  size: a.size,
+                  content: `${header}${body}`,
+                },
+              });
+            }
+
+            // Save message with parts
             await fetch("/api/messages", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -227,29 +303,15 @@ export default function Chat({
                 chatId: currentChatId,
                 role: "user",
                 content: text,
+                parts: messageParts, // Save the parts array for rich messages
               }),
             });
-            const parts: Array<
-              { type: "text"; text: string } | { type: "image"; image: string }
-            > = [];
-            if (text) parts.push({ type: "text", text });
-            for (const a of attachments) {
-              if (a.type.startsWith("image/") && a.dataUrl) {
-                parts.push({ type: "image", image: a.dataUrl });
-                continue;
-              }
-              const header = `Attachment: ${a.name} (${a.type || "file"})`;
-              const body =
-                a.textContent && a.textContent.trim().length > 0
-                  ? `\n\n${a.textContent}`
-                  : `\n\n[Binary document attached. Name: ${a.name}; MIME: ${a.type}; Size: ${a.size} bytes]. If needed, ask the user for a text version or a public link.`;
-              parts.push({ type: "text", text: `${header}${body}` });
-            }
+
             await (
               sendMessage as unknown as (arg: {
-                content: typeof parts;
+                content: typeof messageParts;
               }) => Promise<void>
-            )({ content: parts });
+            )({ content: messageParts });
             setInput("");
             setAttachments([]);
           }}

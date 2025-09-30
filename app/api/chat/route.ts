@@ -54,12 +54,20 @@ export async function POST(req: Request) {
         : undefined;
     const textFromParts = Array.isArray(parts)
       ? parts
-          .map((p: { type: string; text?: string }) => {
-            if (p && p.type === "text" && typeof p.text === "string")
-              return p.text;
-            if (p && p.type === "image") return "[image attached]";
-            return "";
-          })
+          .map(
+            (p: {
+              type: string;
+              text?: string;
+              file?: { content?: string };
+            }) => {
+              if (p && p.type === "text" && typeof p.text === "string")
+                return p.text;
+              if (p && p.type === "image") return "[image attached]";
+              if (p && p.type === "file" && p.file?.content)
+                return p.file.content;
+              return "";
+            }
+          )
           .filter((s: string) => s.length > 0)
           .join("\n")
       : typeof m?.content === "string"

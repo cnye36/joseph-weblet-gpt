@@ -1,0 +1,9 @@
+Task,Start,End,DependsOn
+Literature Review,2025-10-01,2025-10-14,
+Hypothesis Development,2025-10-15,2025-10-21,Literature Review
+Experimental Design,2025-10-22,2025-11-04,Hypothesis Development
+Lab Setup & Calibration,2025-11-05,2025-11-11,Experimental Design
+Data Collection,2025-11-12,2025-12-10,Lab Setup & Calibration
+Data Analysis,2025-12-11,2025-12-24,Data Collection
+Manuscript Writing,2025-12-26,2026-01-15,Data Analysis
+Peer Review & Revisions,2026-01-16,2026-02-10,Manuscript Writing
