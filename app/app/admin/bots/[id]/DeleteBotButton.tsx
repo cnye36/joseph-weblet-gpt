@@ -22,7 +22,7 @@ export default function DeleteBotButton({ botId }: DeleteBotButtonProps) {
   return (
     <button
       type="button"
-      className="px-3 py-2 rounded border bg-red-50 text-red-700 hover:bg-red-100"
+      className="px-3 py-2 rounded border bg-red-50 text-red-700 hover:bg-red-100 cursor-pointer"
       onClick={handleDelete}
     >
       Delete Bot

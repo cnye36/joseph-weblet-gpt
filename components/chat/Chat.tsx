@@ -10,10 +10,9 @@ import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import MessageRenderer from "./MessageRenderer";
 
 export default function Chat({
   botId,
@@ -114,7 +113,7 @@ export default function Chat({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-2xl mx-auto space-y-3 pb-4">
+        <div className="max-w-5xl mx-auto space-y-3 pb-4">
           {messages.map((m: UIMessage) => (
             <div
               key={m.id}
@@ -151,9 +150,12 @@ export default function Chat({
                       const part = p as unknown as UIInlinePart;
                       if (part.type === "text") {
                         return (
-                          <ReactMarkdown key={idx} remarkPlugins={[remarkGfm]}>
-                            {(part as { type: "text"; text: string }).text}
-                          </ReactMarkdown>
+                          <MessageRenderer
+                            key={idx}
+                            content={
+                              (part as { type: "text"; text: string }).text
+                            }
+                          />
                         );
                       }
                       if (part.type === "image") {
@@ -251,7 +253,7 @@ export default function Chat({
             setInput("");
             setAttachments([]);
           }}
-          className="p-4 max-w-2xl mx-auto w-full flex flex-col gap-2"
+          className="p-4 max-w-5xl mx-auto w-full flex flex-col gap-2"
         >
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">

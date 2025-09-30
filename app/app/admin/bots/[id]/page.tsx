@@ -130,7 +130,7 @@ export default async function BotAdminDetailPage(props: {
 
         <div className="flex gap-2">
           <button
-            className="px-3 py-2 rounded border"
+            className="px-3 py-2 rounded border cursor-pointer"
             formAction={`/app/admin/bots/${params.id}/update`}
           >
             Save

@@ -11,7 +11,12 @@ Multi‑agent assistants for research, planning, and technical workflows. Built 
 
 ### Features
 - Authenticated app shell with redirect middleware (`/login`, `/signup`, `/app`)
-- Chat UI with streaming, markdown, and image/file attachments
+- **Generative UI** chat interface with rich content rendering:
+  - Mermaid diagrams (Gantt charts, flowcharts, sequence diagrams, etc.)
+  - Enhanced sortable tables
+  - Syntax-highlighted code blocks with copy functionality
+  - Streaming responses with markdown support
+  - Image/file attachments (PDF, Excel, Word, images)
 - Bot catalog with curated assistants:
   - Poster Creator GPT
   - Ganttrify Pro
@@ -55,6 +60,10 @@ Visit `http://localhost:3000`.
 - `app/app/page.tsx`: dashboard + bot cards
 - `app/app/chat/[bot]/page.tsx`: chat surface with sidebar
 - `components/chat/Chat.tsx`: full chat UI, streaming, attachments
+- `components/chat/MessageRenderer.tsx`: generative UI orchestrator
+- `components/chat/MermaidChart.tsx`: Mermaid diagram renderer
+- `components/chat/EnhancedTable.tsx`: sortable table component
+- `components/chat/CodeBlock.tsx`: syntax-highlighted code
 - `app/api/chat/route.ts`: edge streaming proxy to OpenRouter via AI SDK
 - `app/api/chats/*`: CRUD for chats (title generation at `chats/title`)
 - `app/api/messages/*`: list/create messages per chat
@@ -62,6 +71,7 @@ Visit `http://localhost:3000`.
 - `lib/openrouter.ts`: OpenRouter provider config
 - `lib/supabase/*`: server/browser clients
 - `lib/bots.ts`: built-in bots catalog and default bot id
+- `docs/GENERATIVE_UI.md`: generative UI system documentation
 
 ## Built-in Bots
 Defined in `lib/bots.ts` and displayed in `/app`:

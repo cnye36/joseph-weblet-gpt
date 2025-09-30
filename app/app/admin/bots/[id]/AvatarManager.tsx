@@ -106,8 +106,8 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
         <div className="flex items-center gap-2">
           {/* Current Avatar Display */}
           {avatarUrl ? (
-            <Image 
-              src={avatarUrl} 
+            <Image
+              src={avatarUrl}
               alt={`${botName} avatar`}
               width={40}
               height={40}
@@ -120,18 +120,22 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
           )}
         </div>
       </div>
-      
+
       {/* Message Display */}
       {message && (
-        <div className={`mb-4 p-3 rounded text-sm ${
-          message.includes('Error') || message.includes('Invalid') || message.includes('too large')
-            ? 'bg-red-50 text-red-700 border border-red-200'
-            : 'bg-green-50 text-green-700 border border-green-200'
-        }`}>
+        <div
+          className={`mb-4 p-3 rounded text-sm ${
+            message.includes("Error") ||
+            message.includes("Invalid") ||
+            message.includes("too large")
+              ? "bg-red-50 text-red-700 border border-red-200"
+              : "bg-green-50 text-green-700 border border-green-200"
+          }`}
+        >
           {message}
         </div>
       )}
-      
+
       {/* Avatar Actions - Compact Layout */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Generate AI Avatar */}
@@ -139,7 +143,7 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
           <button
             onClick={handleGenerateAvatar}
             disabled={isGenerating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm cursor-pointer"
           >
             {isGenerating ? (
               <>
@@ -154,7 +158,7 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
             )}
           </button>
         </div>
-        
+
         {/* Upload Custom Avatar */}
         <div className="flex-1">
           <div className="relative">
@@ -168,7 +172,7 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
             <button
               onClick={handleUploadAvatar}
               disabled={!selectedFile || isUploading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm cursor-pointer"
             >
               {isUploading ? (
                 <>
@@ -178,7 +182,7 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  {selectedFile ? 'Upload Selected' : 'Choose File'}
+                  {selectedFile ? "Upload Selected" : "Choose File"}
                 </>
               )}
             </button>
@@ -190,10 +194,13 @@ export default function AvatarManager({ botId, currentAvatarUrl, botName }: Avat
           )}
         </div>
       </div>
-      
+
       {/* Help Text */}
       <div className="mt-3 text-xs text-gray-500">
-        <p>• AI Avatar: Creates contextually relevant avatar based on bot characteristics</p>
+        <p>
+          • AI Avatar: Creates contextually relevant avatar based on bot
+          characteristics
+        </p>
         <p>• Custom Upload: PNG, JPG, or WebP (max 5MB)</p>
       </div>
     </div>

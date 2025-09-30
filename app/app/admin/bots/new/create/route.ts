@@ -7,14 +7,24 @@ export async function POST(req: Request) {
   if (!(await isAdmin()))
     return NextResponse.redirect(new URL("/app/admin", req.url));
   const form = await req.formData();
-  const id = String(form.get("id") || "").trim();
   const name = String(form.get("name") || "").trim();
   const description = String(form.get("description") || "").trim();
   const model = String(form.get("model") || "").trim();
   const system = String(form.get("system") || "").trim();
-  const temperature = Number(form.get("temperature") ?? 1);
-  if (!id || !name || !model || !system)
+  const temperature = Number(form.get("temperature") ?? 0.7);
+  if (!name || !model || !system)
     return NextResponse.redirect(new URL("/app/admin/bots/new", req.url));
+
+  // Generate a unique ID from the bot name
+  const id =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "") // Remove special characters except spaces and hyphens
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, "") + // Remove leading/trailing hyphens
+    "-" +
+    Date.now().toString(36); // Add timestamp to ensure uniqueness
 
   const supabase = await createClient();
 
