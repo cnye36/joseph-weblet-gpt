@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { bots, defaultBotId, type BotId } from "@/lib/bots";
+import { defaultBotId } from "@/lib/bots";
 import ChatListItemActions from "@/components/sidebar/ChatListItemActions";
 
-export default async function ChatList({
-  selectedBot,
-}: {
-  selectedBot?: BotId;
-}) {
+export default async function ChatList({ selectedBot }: { selectedBot?: string }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const bot: BotId =
-    selectedBot && selectedBot in bots ? selectedBot : defaultBotId;
+
+  // Use the selectedBot directly if provided, otherwise fall back to defaultBotId
+  const bot: string = selectedBot || defaultBotId;
 
   const { data } = await supabase
     .from("chats")

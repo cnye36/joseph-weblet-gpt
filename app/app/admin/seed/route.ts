@@ -12,19 +12,19 @@ export async function POST(req: Request) {
     description: ((): string => {
       // Provide sensible default descriptions for each static bot
       switch (b.id) {
-        case 'poster-creator-gpt':
-          return 'Convert research articles into professional, conference-ready posters with field-appropriate templates.';
-        case 'ganttrify-gpt':
-          return 'Generate publication-quality Gantt charts from CSV/Excel/JSON with smart validation and templates.';
-        case 'microbial-biochemistry-gpt':
-          return 'Plan and interpret biochemical panels to identify microorganisms, with QC and confirmatory guidance.';
+        case "poster-creator-gpt":
+          return "Convert research articles into professional, conference-ready posters with field-appropriate templates.";
+        case "ganttrify-gpt":
+          return "Generate publication-quality Gantt charts from CSV/Excel/JSON with smart validation and templates.";
+        case "microbial-biochemistry-gpt":
+          return "Plan and interpret biochemical panels to identify microorganisms, with QC and confirmatory guidance.";
         default:
-          return '';
+          return "";
       }
     })(),
     model: b.model,
     system: b.system,
-    temperature: 1,
+    temperature: 0.3,
   }));
   await supabase.from('bots').upsert(payload, { onConflict: 'id' });
   return NextResponse.redirect(new URL('/app/admin?synced=1', req.url));

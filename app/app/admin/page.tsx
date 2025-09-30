@@ -3,7 +3,7 @@ import { isAdmin } from "@/lib/admin";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
-import DeleteBotButton from "./DeleteBotButton";
+import DeleteBotButton from "../../../components/DeleteBotButton";
 
 async function BotsTable() {
   const supabase = await createClient();

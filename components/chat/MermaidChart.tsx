@@ -17,15 +17,17 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
   const [svgContent, setSvgContent] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chartTitle, setChartTitle] = useState("Mermaid Chart");
-  const renderAttempted = useRef(false);
+  const renderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLoggedErrorRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+      renderTimeoutRef.current = null;
+    }
+
     const renderChart = async () => {
       if (!containerRef.current) return;
-
-      // Prevent multiple render attempts
-      if (renderAttempted.current) return;
-      renderAttempted.current = true;
 
       // Validate chart content
       if (!chart || chart.trim().length === 0) {
@@ -34,6 +36,22 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
       }
 
       let cleanChart = chart.trim();
+      setSvgContent("");
+      setError(null);
+
+      // Normalize first line for other diagram types when AI keeps directives inline
+      cleanChart = cleanChart.replace(
+        /^(flowchart\s+(?:LR|RL|TB|BT|TD))(?!\s*\n)/i,
+        (match) => `${match}\n`
+      );
+      cleanChart = cleanChart.replace(
+        /^(graph\s+(?:TB|BT|LR|RL))(?!\s*\n)/i,
+        (match) => `${match}\n`
+      );
+      cleanChart = cleanChart.replace(
+        /^(sequenceDiagram)(?!\s*\n)/i,
+        (match) => `${match}\n`
+      );
 
       // AGGRESSIVE AUTO-FIX for Gantt charts
       if (cleanChart.includes("gantt")) {
@@ -195,6 +213,9 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
         // Generate unique ID for this chart
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 
+        // Perform a dry-run parse to surface syntax errors without spamming console
+        await mermaid.parse(cleanChart);
+
         // Render the chart
         const { svg } = await mermaid.render(id, cleanChart);
         setSvgContent(svg);
@@ -206,8 +227,16 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
           setChartTitle(titleMatch[1].trim());
         }
       } catch (err) {
-        console.error("❌ Mermaid rendering error:", err);
-        console.log("Chart content that failed:", cleanChart);
+        const serializedError =
+          err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+
+        if (lastLoggedErrorRef.current !== `${serializedError}|${cleanChart}`) {
+          lastLoggedErrorRef.current = `${serializedError}|${cleanChart}`;
+          console.warn("⚠️ Mermaid rendering error:", serializedError);
+          if (process.env.NODE_ENV !== "production") {
+            console.info("Chart content that failed:", cleanChart);
+          }
+        }
 
         // Extract more detailed error information
         let errorMessage = "Failed to render chart";
@@ -228,11 +257,16 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
       }
     };
 
-    renderChart();
+    renderTimeoutRef.current = setTimeout(() => {
+      renderChart();
+      renderTimeoutRef.current = null;
+    }, 350);
 
-    // Reset render flag when chart changes
     return () => {
-      renderAttempted.current = false;
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+        renderTimeoutRef.current = null;
+      }
     };
   }, [chart]);
 

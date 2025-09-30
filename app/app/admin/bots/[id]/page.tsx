@@ -1,10 +1,10 @@
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
-import AvatarManager from "./AvatarManager";
+import AvatarManager from "../../../../../components/AvatarManager";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import DeleteBotButton from "./DeleteBotButton";
-import TemperatureSlider from "./TemperatureSlider";
+import DeleteBotButton from "../../../../../components/AdminDeleteBotButton";
+import TemperatureSlider from "../../../../../components/TemperatureSlider";
 
 export default async function BotAdminDetailPage(props: {
   params: Promise<{ id: string }>;

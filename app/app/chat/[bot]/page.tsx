@@ -16,27 +16,52 @@ export default async function ChatBotScopedPage({
 }) {
   const { bot: rawBot } = await params;
   const { chat: chatParam } = await searchParams;
-  const selectedBot =
-    rawBot && rawBot in bots ? (rawBot as BotId) : defaultBotId;
-  if (!(rawBot in bots)) {
+
+  // Check if bot exists in static bots or database
+  let botExists = rawBot && rawBot in bots;
+  let botData = null;
+
+  if (!botExists) {
+    // Check database for dynamically created bots
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("bots")
+        .select("id, name, description, model, system, temperature")
+        .eq("id", rawBot)
+        .maybeSingle();
+
+      if (data) {
+        botExists = true;
+        botData = data;
+      }
+    } catch (error) {
+      console.error("Error checking bot in database:", error);
+    }
+  }
+
+  const selectedBot = botExists ? (rawBot as BotId) : defaultBotId;
+
+  if (!botExists) {
     const to = `/app/chat/${selectedBot}${
       chatParam ? `?chat=${chatParam}` : ""
     }`;
     redirect(to);
   }
+
   const chatId = chatParam ?? null;
-  const bot = bots[selectedBot];
+  const bot = botData || bots[selectedBot];
 
   return (
     <SidebarProvider defaultOpen={false}>
       <MainSidebar />
       <SidebarInset>
         <div className="flex h-svh">
-          <ChatSidebar selectedBot={selectedBot} />
+          <ChatSidebar selectedBot={rawBot} />
           <div className="flex-1 flex flex-col min-h-0">
             <BotHeader botId={selectedBot} fallbackName={bot.name} />
             <div className="flex-1 min-h-0">
-              <Chat botId={selectedBot} chatId={chatId} />
+              <Chat botId={rawBot} chatId={chatId} />
             </div>
           </div>
         </div>
@@ -49,7 +74,7 @@ async function BotHeader({
   botId,
   fallbackName,
 }: {
-  botId: BotId;
+  botId: string;
   fallbackName: string;
 }) {
   const supabase = await createClient();

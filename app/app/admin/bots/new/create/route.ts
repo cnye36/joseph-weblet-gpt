@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const description = String(form.get("description") || "").trim();
   const model = String(form.get("model") || "").trim();
   const system = String(form.get("system") || "").trim();
-  const temperature = Number(form.get("temperature") ?? 0.7);
+  const temperature = Number(form.get("temperature") ?? 0.3);
   if (!name || !model || !system)
     return NextResponse.redirect(new URL("/app/admin/bots/new", req.url));
 
