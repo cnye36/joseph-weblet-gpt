@@ -17,12 +17,25 @@ export default async function Sidebar({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  
+  if (!user) return null;
+
+  // Fetch user profile for avatar and name
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, avatar_url")
+    .eq("id", user.id)
+    .single();
+
   const displayName =
-    user?.user_metadata?.name || user?.email?.split("@")[0] || "User";
+    profile?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
   const email = user?.email || "user@example.com";
-  const avatar = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(
-    email
-  )}`;
+  const avatar =
+    profile?.avatar_url ||
+    `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(email)}`;
 
   return (
     <aside className="border-r flex flex-col h-svh">
