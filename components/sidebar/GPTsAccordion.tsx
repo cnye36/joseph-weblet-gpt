@@ -2,11 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
+import { SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Bot, ChevronRight, ChevronDown } from "lucide-react";
-import { bots } from "@/lib/bots";
 
-export default function GPTsAccordion() {
+interface Bot {
+  id: string;
+  name: string;
+}
+
+interface GPTsAccordionProps {
+  bots: Bot[];
+}
+
+export default function GPTsAccordion({ bots }: GPTsAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -22,11 +30,17 @@ export default function GPTsAccordion() {
       </SidebarMenuButton>
       {isOpen && (
         <SidebarMenuSub className="space-y-2">
-          {Object.values(bots).map((bot) => (
+          {bots.map((bot) => (
             <SidebarMenuSubItem key={bot.id}>
               <SidebarMenuSubButton asChild>
-                <Link href={`/app/chat/${bot.id}`} className="block truncate" title={bot.name}>
-                  {bot.name.length > 25 ? `${bot.name.substring(0, 25)}...` : bot.name}
+                <Link
+                  href={`/app/chat/${bot.id}`}
+                  className="block truncate"
+                  title={bot.name}
+                >
+                  {bot.name.length > 25
+                    ? `${bot.name.substring(0, 25)}...`
+                    : bot.name}
                 </Link>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>

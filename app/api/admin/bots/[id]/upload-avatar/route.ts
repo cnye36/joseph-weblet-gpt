@@ -46,11 +46,11 @@ export async function POST(
     
     // Upload to Supabase storage
     const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from('bot-avatars')
+    const { error } = await supabase.storage
+      .from("bot-avatars")
       .upload(filename, buffer, {
         contentType: file.type,
-        upsert: false
+        upsert: false,
       });
     
     if (error) {

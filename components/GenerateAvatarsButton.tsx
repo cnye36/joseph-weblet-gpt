@@ -20,9 +20,10 @@ export default function GenerateAvatarsButton() {
       if (response.ok) {
         setMessage('Avatars generated successfully!');
       } else {
-        setMessage(`Error: ${data.error}`);
+        setMessage(`Error: ${data.error || "Unknown error"}`);
       }
     } catch (error) {
+      console.error("Error generating avatars:", error);
       setMessage('Error generating avatars');
     } finally {
       setIsLoading(false);

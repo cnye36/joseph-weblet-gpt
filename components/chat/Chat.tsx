@@ -125,9 +125,7 @@ export default function Chat({
             >
               <div
                 className={`space-y-1 rounded-lg px-3 py-2 max-w-[80%] ${
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                  m.role === "user" ? "bg-blue-600 text-white" : "bg-muted"
                 }`}
               >
                 <div className="text-xs opacity-70">{m.role}</div>
@@ -148,7 +146,10 @@ export default function Chat({
                       type UIInlinePart =
                         | { type: "text"; text: string }
                         | { type: "image"; image: string }
-                        | { type: "file"; file: { name: string; type: string; size: number } }
+                        | {
+                            type: "file";
+                            file: { name: string; type: string; size: number };
+                          }
                         | { type: string };
                       const part = p as unknown as UIInlinePart;
                       if (part.type === "text") {
@@ -178,7 +179,12 @@ export default function Chat({
                         );
                       }
                       if (part.type === "file") {
-                        const file = (part as { type: "file"; file: { name: string; type: string; size: number } }).file;
+                        const file = (
+                          part as {
+                            type: "file";
+                            file: { name: string; type: string; size: number };
+                          }
+                        ).file;
                         return (
                           <div
                             key={idx}
@@ -216,24 +222,36 @@ export default function Chat({
               </div>
             </div>
           ))}
-          {/* Loading indicator when AI is thinking */}
-          {(status === "streaming" || status === "submitted") && (
-            <div className="flex gap-4 px-4 py-6">
-              <div className="size-8 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-medium text-primary">AI</span>
-              </div>
-              <div className="flex-1 space-y-2 pt-1">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+          {/* Loading indicator when AI is thinking - only show if no assistant message yet */}
+          {(status === "streaming" || status === "submitted") &&
+            !messages.some((m) => m.role === "assistant") && (
+              <div className="flex gap-4 px-4 py-6">
+                <div className="size-8 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-primary">AI</span>
+                </div>
+                <div className="flex-1 space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <div
+                        className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      Thinking...
+                    </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">Thinking...</span>
                 </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
       <div className="border-t bg-background">
@@ -245,7 +263,7 @@ export default function Chat({
             if (!text && attachments.length === 0) return;
             let currentChatId = chatId;
             let shouldGenerateTitle = false;
-            
+
             if (!currentChatId) {
               const res = await fetch("/api/chats", {
                 method: "POST",
@@ -263,7 +281,7 @@ export default function Chat({
               // Remove the new=true parameter
               router.replace(`/app/chat/${botId}?chat=${currentChatId}`);
             }
-            
+
             // Generate title if needed
             if (shouldGenerateTitle) {
               try {
@@ -285,24 +303,34 @@ export default function Chat({
               } catch {}
             }
             const messageParts: Array<
-              { type: "text"; text: string } | { type: "image"; image: string } | { type: "file"; file: { name: string; type: string; size: number; content?: string } }
+              | { type: "text"; text: string }
+              | { type: "image"; image: string }
+              | {
+                  type: "file";
+                  file: {
+                    name: string;
+                    type: string;
+                    size: number;
+                    content?: string;
+                  };
+                }
             > = [];
             if (text) messageParts.push({ type: "text", text });
-            
+
             // Add file attachments
             for (const a of attachments) {
               if (a.type.startsWith("image/") && a.dataUrl) {
                 messageParts.push({ type: "image", image: a.dataUrl });
                 continue;
               }
-              
+
               // For non-image files, send file content to AI but keep separate from user message
               const header = `Attachment: ${a.name} (${a.type || "file"})`;
               const body =
                 a.textContent && a.textContent.trim().length > 0
                   ? `\n\n${a.textContent}`
                   : `\n\n[Binary document attached. Name: ${a.name}; MIME: ${a.type}; Size: ${a.size} bytes]. If needed, ask the user for a text version or a public link.`;
-              
+
               // Store file metadata separately
               messageParts.push({
                 type: "file" as const,
@@ -327,13 +355,14 @@ export default function Chat({
               }),
             });
 
+            setInput("");
+            setAttachments([]);
+
             await (
               sendMessage as unknown as (arg: {
                 content: typeof messageParts;
               }) => Promise<void>
             )({ content: messageParts });
-            setInput("");
-            setAttachments([]);
           }}
           className="p-4 max-w-5xl mx-auto w-full flex flex-col gap-2"
         >
@@ -404,12 +433,12 @@ export default function Chat({
                 }
               }}
               placeholder="Ask something..."
-              className="min-h-12 pr-24 pl-10"
+              className="min-h-8 pr-24 pl-14 rounded-2xl"
             />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="absolute left-2 top-2.5 text-muted-foreground hover:text-foreground"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Attach image"
               disabled={status !== "ready"}
             >
@@ -418,7 +447,7 @@ export default function Chat({
             <Button
               type="submit"
               size="icon"
-              className="absolute right-2 top-2 h-8 w-8"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
               disabled={status !== "ready"}
               aria-label="Send"
             >

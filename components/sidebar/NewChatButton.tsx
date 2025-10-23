@@ -63,12 +63,7 @@ export default function NewChatButton() {
   }, [loading, pathname, router]);
 
   return (
-    <Button
-      variant="secondary"
-      onClick={handleNewChat}
-      disabled={loading}
-      className="w-full mb-4"
-    >
+    <Button onClick={handleNewChat} disabled={loading} className="w-full mb-4">
       {loading ? "Creating..." : "New Chat"}
     </Button>
   );

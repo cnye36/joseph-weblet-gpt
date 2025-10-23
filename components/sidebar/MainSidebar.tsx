@@ -8,22 +8,46 @@ import { isAdmin } from "@/lib/admin";
 import { NavUser } from "@/components/sidebar/NavUser";
 import { Home, Settings } from "lucide-react";
 import GPTsAccordion from "@/components/sidebar/GPTsAccordion";
+import { bots as staticBots } from "@/lib/bots";
 
 export default async function MainSidebar() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const admin = await isAdmin();
-  
+
   if (!user) return null;
-  
-  const name = user?.user_metadata?.name || user?.email?.split("@")[0] || "User";
+
+  const name =
+    user?.user_metadata?.name || user?.email?.split("@")[0] || "User";
   const email = user?.email || "user@example.com";
-  const avatar = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(email)}`;
+  const avatar = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(
+    email
+  )}`;
+
+  // Fetch all bots from database
+  const { data: dbBots } = await supabase
+    .from("bots")
+    .select("id, name")
+    .order("id");
+
+  // Fallback to static bots if no bots in database
+  const botsList =
+    dbBots && dbBots.length > 0
+      ? dbBots
+      : Object.values(staticBots).map((b) => ({
+          id: b.id,
+          name: b.name,
+        }));
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <Link href="/" className="flex items-center gap-3 px-2 py-1 hover:bg-accent/50 rounded-md transition-colors">
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-2 py-1 hover:bg-accent/50 rounded-md transition-colors"
+        >
           <Image
             src="/logo.png"
             alt="Weblet GPT"
@@ -48,7 +72,7 @@ export default async function MainSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <GPTsAccordion />
+            <GPTsAccordion bots={botsList} />
           </SidebarMenu>
         </div>
       </SidebarContent>

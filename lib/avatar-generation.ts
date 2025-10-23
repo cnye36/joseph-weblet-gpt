@@ -143,11 +143,11 @@ async function uploadAvatarToSupabase(imageUrl: string, botName: string): Promis
     
     // Upload to Supabase storage
     const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from('bot-avatars')
+    const { error } = await supabase.storage
+      .from("bot-avatars")
       .upload(filename, imageData, {
-        contentType: 'image/png',
-        upsert: false
+        contentType: "image/png",
+        upsert: false,
       });
     
     if (error) {
@@ -198,11 +198,11 @@ async function generateFallbackAvatar(options: AvatarGenerationOptions): Promise
     const filename = `avatar-${botName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}.svg`;
     
     const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from('bot-avatars')
+    const { error } = await supabase.storage
+      .from("bot-avatars")
       .upload(filename, svgBuffer, {
-        contentType: 'image/svg+xml',
-        upsert: false
+        contentType: "image/svg+xml",
+        upsert: false,
       });
     
     if (error) {
