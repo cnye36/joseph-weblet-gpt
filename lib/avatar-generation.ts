@@ -24,21 +24,24 @@ export async function generateBotAvatar(options: AvatarGenerationOptions): Promi
   
   try {
     // Generate image using OpenAI DALL-E directly
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: avatarPrompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'natural'
-      })
-    });
+    const response = await fetch(
+      "https://api.openai.com/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "GPT-image-1-mini",
+          prompt: avatarPrompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "standard",
+          style: "natural",
+        }),
+      }
+    );
 
     if (!response.ok) {
       console.error('DALL-E API error:', await response.text());

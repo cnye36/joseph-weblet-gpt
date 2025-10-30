@@ -68,7 +68,7 @@ Complete step-by-step guide to setting up PayPal for subscription billing.
 
 #### Pricing
 - **Billing Cycle**: "Monthly" (or your preference)
-- **Price**: $9.99 (or your price)
+- **Price**: $25.00 (or your price)
 - **Currency**: USD (or your currency)
 
 #### Setup Options

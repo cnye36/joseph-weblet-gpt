@@ -116,24 +116,27 @@ USER'S ORIGINAL PROMPT:
 Create an enhanced system prompt that transforms this into a professional, comprehensive prompt for a scientific/technical AI assistant.`;
 
     // Use OpenAI API to enhance the prompt
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: enhancementPrompt
-          }
-        ],
-        temperature: 0.3, // Lower temperature for more consistent results
-        max_tokens: 2000,
-      }),
-    });
+    const openaiResponse = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-mini",
+          messages: [
+            {
+              role: "system",
+              content: enhancementPrompt,
+            },
+          ],
+          temperature: 0.3, // Lower temperature for more consistent results
+          max_tokens: 2000,
+        }),
+      }
+    );
 
     if (!openaiResponse.ok) {
       throw new Error('OpenAI API request failed');
