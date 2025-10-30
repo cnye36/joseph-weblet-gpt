@@ -29,8 +29,8 @@ export default async function Home() {
             </h1>
             <p className="mt-6 text-xl text-neutral-700 max-w-3xl mx-auto leading-relaxed">
               A cutting-edge platform designed for scientists, researchers, and
-              highly technical professionals. Chat with optimized Weblets tailored
-              for your specific domain expertise and complex workflows.
+              highly technical professionals. Chat with optimized Weblets
+              tailored for your specific domain expertise and complex workflows.
             </p>
             <div className="mt-8 flex items-center justify-center gap-x-3">
               {isAuthed ? (
@@ -43,7 +43,7 @@ export default async function Home() {
                     <Link href="/login">Sign in</Link>
                   </Button>
                   <Button asChild size="lg" variant="outline">
-                    <Link href="/signup">Create account</Link>
+                    <Link href="/pricing">Sign Up</Link>
                   </Button>
                 </>
               )}

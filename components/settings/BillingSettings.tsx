@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, CreditCard, CheckCircle2 } from "lucide-react";
+import { Loader2, CreditCard, CheckCircle2, ArrowUpRight } from "lucide-react";
 
 declare global {
   interface Window {
@@ -34,6 +34,12 @@ export default function BillingSettings() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [paypalReady, setPaypalReady] = useState(false);
   const [paypalOrderReady, setPaypalOrderReady] = useState(false);
+  const [notice, setNotice] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+  }>({ open: false, title: "", message: "" });
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const supabase = createClient();
 
   const loadSubscription = useCallback(async () => {
@@ -49,7 +55,7 @@ export default function BillingSettings() {
           .select("*")
           .eq("user_id", user.id)
           .eq("status", "active")
-          .single();
+          .maybeSingle();
 
         if (data) {
           setSubscription(data);
@@ -115,23 +121,55 @@ export default function BillingSettings() {
     }
   }
 
-  function loadPayPalOrderScript() {
-    if (window.paypal) {
-      setPaypalOrderReady(true);
+  function unloadPayPalSDK() {
+    const existing = document.querySelector(
+      'script[src*="www.paypal.com/sdk/js"]'
+    ) as HTMLScriptElement | null;
+    if (existing) existing.remove();
+    if ("paypal" in window) {
+      delete (window as unknown as { paypal?: unknown }).paypal;
+    }
+    setPaypalReady(false);
+    setPaypalOrderReady(false);
+  }
+
+  function loadPayPalSDK(options: {
+    intent: "subscription" | "capture";
+    vault?: boolean;
+  }) {
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (!clientId) {
+      console.error("Missing NEXT_PUBLIC_PAYPAL_CLIENT_ID");
       return;
     }
 
+    // Always unload any previously loaded SDK to avoid intent mismatches
+    unloadPayPalSDK();
+
+    const params = new URLSearchParams();
+    params.set("client-id", clientId);
+    params.set("components", "buttons");
+    params.set("intent", options.intent);
+    if (options.vault) params.set("vault", "true");
+
     const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&components=buttons&intent=capture`;
+    script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
     script.async = true;
     script.onload = () => {
-      setPaypalOrderReady(true);
-      if (showOneDayButtons) {
-        renderOneDayButtons();
+      if (options.intent === "subscription") {
+        setPaypalReady(true);
+        if (showPayPalButtons) {
+          renderPayPalButtons();
+        }
+      } else {
+        setPaypalOrderReady(true);
+        if (showOneDayButtons) {
+          renderOneDayButtons();
+        }
       }
     };
     script.onerror = () => {
-      console.error("Failed to load PayPal SDK script for orders");
+      console.error("Failed to load PayPal SDK script");
     };
     document.body.appendChild(script);
   }
@@ -171,8 +209,6 @@ export default function BillingSettings() {
         },
         onApprove: async function (data: Record<string, unknown>) {
           console.log("Subscription approved:", data);
-
-          // Save subscription to database
           try {
             const {
               data: { user },
@@ -192,49 +228,42 @@ export default function BillingSettings() {
 
               if (error) throw error;
 
-              alert("Subscription successful!");
               await loadSubscription();
               setShowPayPalButtons(false);
+              setNotice({
+                open: true,
+                title: "Subscription successful",
+                message: "Your Premium Plan is now active.",
+              });
             }
           } catch (error) {
             console.error("Error saving subscription:", error);
-            alert("Subscription created but error saving to database.");
+            setNotice({
+              open: true,
+              title: "Subscription saved with issues",
+              message:
+                "Subscription was created but there was a problem saving it.",
+            });
           }
         },
         onError: function (err: Error) {
           console.error("PayPal error:", err);
-          alert("An error occurred with PayPal. Please try again.");
+          setNotice({
+            open: true,
+            title: "PayPal error",
+            message: "An error occurred with PayPal. Please try again.",
+          });
         },
       })
       .render("#paypal-button-container");
   }, [paypalPlanId, supabase, loadSubscription]);
 
-  const loadPayPalScript = useCallback(() => {
-    if (window.paypal) {
-      setPaypalReady(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
-    script.async = true;
-    script.onload = () => {
-      setPaypalReady(true);
-      if (showPayPalButtons) {
-        renderPayPalButtons();
-      }
-    };
-    script.onerror = () => {
-      console.error("Failed to load PayPal SDK script");
-    };
-    document.body.appendChild(script);
-  }, [showPayPalButtons, renderPayPalButtons]);
+  // Removed old loader; use loadPayPalSDK directly when needed
 
   useEffect(() => {
     loadSubscription();
-    loadPayPalScript();
     loadPayPalPlanId();
-  }, [loadPayPalScript, loadSubscription, loadPayPalPlanId]);
+  }, [loadSubscription, loadPayPalPlanId]);
 
   useEffect(() => {
     if (showPayPalButtons && window.paypal) {
@@ -293,18 +322,29 @@ export default function BillingSettings() {
               }
             ).order.capture();
             console.log("Order captured:", details);
-            alert("One-day pass purchased successfully.");
+            setNotice({
+              open: true,
+              title: "Payment successful",
+              message: "Your one-day pass has been activated.",
+            });
             setShowOneDayButtons(false);
           } catch (err) {
             console.error("Error capturing order:", err);
-            alert(
-              "Payment captured but an error occurred processing your purchase."
-            );
+            setNotice({
+              open: true,
+              title: "Processing issue",
+              message:
+                "Payment captured but an error occurred processing your purchase.",
+            });
           }
         },
         onError: function (err: Error) {
           console.error("PayPal order error:", err);
-          alert("An error occurred with PayPal. Please try again.");
+          setNotice({
+            open: true,
+            title: "PayPal error",
+            message: "An error occurred with PayPal. Please try again.",
+          });
         },
       })
       .render("#paypal-one-day-button-container");
@@ -312,11 +352,6 @@ export default function BillingSettings() {
 
   async function cancelSubscription() {
     if (!subscription) return;
-
-    if (!confirm("Are you sure you want to cancel your subscription?")) {
-      return;
-    }
-
     try {
       // Call API to cancel PayPal subscription
       const response = await fetch("/api/cancel-subscription", {
@@ -338,12 +373,20 @@ export default function BillingSettings() {
         .eq("id", subscription.id);
 
       if (error) throw error;
-
-      alert("Subscription cancelled successfully!");
       await loadSubscription();
+      setNotice({
+        open: true,
+        title: "Subscription cancelled",
+        message: "Your subscription has been cancelled.",
+      });
     } catch (error) {
       console.error("Error cancelling subscription:", error);
-      alert("Error cancelling subscription. Please try again.");
+      setNotice({
+        open: true,
+        title: "Cancellation failed",
+        message:
+          "There was an error cancelling your subscription. Please try again.",
+      });
     }
   }
 
@@ -357,9 +400,63 @@ export default function BillingSettings() {
 
   return (
     <div className="space-y-6">
+      {notice.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setNotice({ open: false, title: "", message: "" })}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h4 className="text-lg font-semibold mb-2">{notice.title}</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              {notice.message}
+            </p>
+            <div className="flex justify-end">
+              <Button
+                onClick={() =>
+                  setNotice({ open: false, title: "", message: "" })
+                }
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {confirmCancelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setConfirmCancelOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h4 className="text-lg font-semibold mb-2">Cancel subscription?</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Are you sure you want to cancel your subscription?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmCancelOpen(false)}
+              >
+                Keep subscription
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  setConfirmCancelOpen(false);
+                  await cancelSubscription();
+                }}
+              >
+                Cancel subscription
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Current Subscription */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Current Subscription</h3>
+        <h3 className="text-lg font-semibold">Current Plan</h3>
         {subscription ? (
           <Card className="p-6">
             <div className="flex items-start justify-between">
@@ -369,30 +466,59 @@ export default function BillingSettings() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-semibold">{subscription.plan_name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    ${subscription.amount}/month
-                  </p>
+                  {subscription.plan_name === "One-Day Pass" ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        ${subscription.amount} one-time payment
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Expires:{" "}
+                        {new Date(
+                          subscription.next_billing_date
+                        ).toLocaleDateString()}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        ${subscription.amount}/month
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Next billing date:{" "}
+                        {new Date(
+                          subscription.next_billing_date
+                        ).toLocaleDateString()}
+                      </p>
+                    </>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     Status:{" "}
                     <span className="text-green-600 font-medium">
                       {subscription.status}
                     </span>
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Next billing date:{" "}
-                    {new Date(
-                      subscription.next_billing_date
-                    ).toLocaleDateString()}
-                  </p>
                 </div>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={cancelSubscription}
-              >
-                Cancel Subscription
-              </Button>
+              <div className="flex flex-col gap-2">
+                {subscription.plan_name === "One-Day Pass" ? (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      window.location.href = "/pricing";
+                    }}
+                  >
+                    Upgrade to Premium <ArrowUpRight className="ml-1 w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setConfirmCancelOpen(true)}
+                  >
+                    Cancel Subscription
+                  </Button>
+                )}
+              </div>
             </div>
           </Card>
         ) : (
@@ -402,18 +528,23 @@ export default function BillingSettings() {
                 <CreditCard className="w-8 h-8 text-muted-foreground" />
               </div>
               <div>
-                <h4 className="font-semibold mb-1">No Active Subscription</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-semibold mb-1">No Active Plan</h4>
+                <p className="text-sm text-muted-foreground mb-4">
                   Subscribe to unlock premium features and support development.
                 </p>
+                <Button onClick={() => {
+                  window.location.href = "/pricing";
+                }}>
+                  View Plans
+                </Button>
               </div>
             </div>
           </Card>
         )}
       </div>
 
-      {/* Available Plans */}
-      {!subscription && (
+      {/* Available Plans - Remove this section as payment is now on pricing page */}
+      {false && !subscription && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Available Plans</h3>
           <Card className="p-6">
@@ -473,7 +604,7 @@ export default function BillingSettings() {
                     onClick={() => {
                       setShowOneDayButtons(false);
                       setShowPayPalButtons(true);
-                      loadPayPalScript();
+                      loadPayPalSDK({ intent: "subscription", vault: true });
                     }}
                   >
                     Subscribe Monthly ($25)
@@ -484,7 +615,7 @@ export default function BillingSettings() {
                     onClick={() => {
                       setShowPayPalButtons(false);
                       setShowOneDayButtons(true);
-                      loadPayPalOrderScript();
+                      loadPayPalSDK({ intent: "capture" });
                     }}
                   >
                     Buy 1-Day Pass ($5)
