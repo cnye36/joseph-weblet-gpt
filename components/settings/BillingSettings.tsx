@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
@@ -36,25 +36,7 @@ export default function BillingSettings() {
   const [paypalOrderReady, setPaypalOrderReady] = useState(false);
   const supabase = createClient();
 
-  useEffect(() => {
-    loadSubscription();
-    loadPayPalScript();
-    loadPayPalPlanId();
-  }, []);
-
-  useEffect(() => {
-    if (showPayPalButtons && window.paypal) {
-      renderPayPalButtons();
-    }
-  }, [showPayPalButtons, paypalReady]);
-
-  useEffect(() => {
-    if (showOneDayButtons && window.paypal) {
-      renderOneDayButtons();
-    }
-  }, [showOneDayButtons, paypalOrderReady]);
-
-  async function loadSubscription() {
+  const loadSubscription = useCallback(async () => {
     try {
       setLoading(true);
       const {
@@ -78,9 +60,9 @@ export default function BillingSettings() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase]);
 
-  async function loadPayPalPlanId() {
+  const loadPayPalPlanId = useCallback(async () => {
     // Try to get plan ID from environment variable first
     const envPlanId = process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID;
     if (envPlanId) {
@@ -90,7 +72,7 @@ export default function BillingSettings() {
 
     // If no plan ID in env, check if we need to set up PayPal
     console.log("No PayPal plan ID found in environment variables");
-  }
+  }, []);
 
   async function setupPayPalSubscription() {
     try {
@@ -133,27 +115,6 @@ export default function BillingSettings() {
     }
   }
 
-  function loadPayPalScript() {
-    if (window.paypal) {
-      setPaypalReady(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
-    script.async = true;
-    script.onload = () => {
-      setPaypalReady(true);
-      if (showPayPalButtons) {
-        renderPayPalButtons();
-      }
-    };
-    script.onerror = () => {
-      console.error("Failed to load PayPal SDK script");
-    };
-    document.body.appendChild(script);
-  }
-
   function loadPayPalOrderScript() {
     if (window.paypal) {
       setPaypalOrderReady(true);
@@ -175,7 +136,7 @@ export default function BillingSettings() {
     document.body.appendChild(script);
   }
 
-  function renderPayPalButtons() {
+  const renderPayPalButtons = useCallback(() => {
     const paypalContainer = document.getElementById("paypal-button-container");
     if (!paypalContainer || !window.paypal) return;
 
@@ -223,7 +184,7 @@ export default function BillingSettings() {
                 subscription_id: data.subscriptionID,
                 plan_name: "Premium Plan",
                 status: "active",
-                amount: 25.00,
+                amount: 25.0,
                 next_billing_date: new Date(
                   Date.now() + 30 * 24 * 60 * 60 * 1000
                 ).toISOString(),
@@ -246,7 +207,46 @@ export default function BillingSettings() {
         },
       })
       .render("#paypal-button-container");
-  }
+  }, [paypalPlanId, supabase, loadSubscription]);
+
+  const loadPayPalScript = useCallback(() => {
+    if (window.paypal) {
+      setPaypalReady(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
+    script.async = true;
+    script.onload = () => {
+      setPaypalReady(true);
+      if (showPayPalButtons) {
+        renderPayPalButtons();
+      }
+    };
+    script.onerror = () => {
+      console.error("Failed to load PayPal SDK script");
+    };
+    document.body.appendChild(script);
+  }, [showPayPalButtons, renderPayPalButtons]);
+
+  useEffect(() => {
+    loadSubscription();
+    loadPayPalScript();
+    loadPayPalPlanId();
+  }, [loadPayPalScript, loadSubscription, loadPayPalPlanId]);
+
+  useEffect(() => {
+    if (showPayPalButtons && window.paypal) {
+      renderPayPalButtons();
+    }
+  }, [showPayPalButtons, paypalReady, renderPayPalButtons]);
+
+  useEffect(() => {
+    if (showOneDayButtons && window.paypal) {
+      renderOneDayButtons();
+    }
+  }, [showOneDayButtons, paypalOrderReady]);
 
   function renderOneDayButtons() {
     const container = document.getElementById(
