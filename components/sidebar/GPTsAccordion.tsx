@@ -21,7 +21,7 @@ export default function GPTsAccordion({ bots }: GPTsAccordionProps) {
     <SidebarMenuItem>
       <SidebarMenuButton onClick={() => setIsOpen(!isOpen)}>
         <Bot className="size-4" />
-        <span>GPTs</span>
+        <span>Weblets</span>
         {isOpen ? (
           <ChevronDown className="ml-auto size-4" />
         ) : (

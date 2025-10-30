@@ -29,7 +29,7 @@ export default async function Home() {
             </h1>
             <p className="mt-6 text-xl text-neutral-700 max-w-3xl mx-auto leading-relaxed">
               A cutting-edge platform designed for scientists, researchers, and
-              highly technical professionals. Chat with optimized GPTs tailored
+              highly technical professionals. Chat with optimized Weblets tailored
               for your specific domain expertise and complex workflows.
             </p>
             <div className="mt-8 flex items-center justify-center gap-x-3">
@@ -55,7 +55,7 @@ export default async function Home() {
               Featured Assistants You Can Use Now
             </h2>
             <p className="text-center text-lg text-neutral-600 max-w-2xl mx-auto">
-              Practical, purpose-built GPTs tailored for common workflows.
+              Practical, purpose-built Weblets tailored for common workflows.
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <ExampleCard

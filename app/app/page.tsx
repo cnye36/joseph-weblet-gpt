@@ -32,11 +32,11 @@ export default async function AppDashboard() {
           <header className="max-w-5xl mx-auto mb-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-                Choose Your AI Assistant
+                Choose Your AI Companion
               </h1>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                Select from our collection of specialized GPTs designed for your
-                specific domain and workflow needs.
+                Select from our collection of specialized Weblets designed for
+                your specific domain and workflow needs.
               </p>
             </div>
           </header>
