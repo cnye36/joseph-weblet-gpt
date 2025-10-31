@@ -9,6 +9,7 @@ import { NavUser } from "@/components/sidebar/NavUser";
 import { Home, Settings } from "lucide-react";
 import GPTsAccordion from "@/components/sidebar/GPTsAccordion";
 import { bots as staticBots } from "@/lib/bots";
+import SubscriptionCountdown from "@/components/sidebar/SubscriptionCountdown";
 
 export default async function MainSidebar() {
   const supabase = await createClient();
@@ -99,6 +100,7 @@ export default async function MainSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
         )}
+        <SubscriptionCountdown />
         <NavUser user={{ name, email, avatar }} />
       </SidebarFooter>
       <SidebarRail />

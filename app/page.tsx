@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-// import Image from "next/image";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -11,12 +9,40 @@ import {
 } from "@/components/ui/card";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
+import { bots as staticBots } from "@/lib/bots";
 
 export default async function Home() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
 
-  const isAuthed = Boolean(data.user);
+  // Fetch all bots from database
+  const { data: dbBots, error: botsError } = await supabase
+    .from("bots")
+    .select("id, name, description, avatar_url")
+    .order("created_at", { ascending: false });
+
+  // Log error if fetching bots fails (non-blocking, will use static bots as fallback)
+  if (botsError) {
+    console.error("Error fetching bots:", botsError);
+  }
+
+  // Use database bots if available, otherwise fallback to static bots
+  const allBots =
+    dbBots && dbBots.length > 0
+      ? dbBots.map((b) => ({
+          id: b.id,
+          name: b.name,
+          description: b.description || "",
+          avatar_url: b.avatar_url,
+        }))
+      : Object.values(staticBots).map((b) => ({
+          id: b.id,
+          name: b.name,
+          description: "",
+          avatar_url: null,
+        }));
+
+  // Select 9 GPTs to feature (or all if less than 9)
+  const featuredGPTs = allBots.slice(0, 9);
 
   return (
     <>
@@ -32,22 +58,6 @@ export default async function Home() {
               highly technical professionals. Chat with optimized Weblets
               tailored for your specific domain expertise and complex workflows.
             </p>
-            <div className="mt-8 flex items-center justify-center gap-x-3">
-              {isAuthed ? (
-                <Button asChild size="lg">
-                  <Link href="/app">Open App</Link>
-                </Button>
-              ) : (
-                <>
-                  <Button asChild size="lg">
-                    <Link href="/login">Sign in</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline">
-                    <Link href="/pricing">Sign Up</Link>
-                  </Button>
-                </>
-              )}
-            </div>
           </div>
           {/* Examples Section (actual GPTs users can use) */}
           <section className="mx-auto mt-20 max-w-6xl">
@@ -57,19 +67,18 @@ export default async function Home() {
             <p className="text-center text-lg text-neutral-600 max-w-2xl mx-auto">
               Practical, purpose-built Weblets tailored for common workflows.
             </p>
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <ExampleCard
-                title="Poster Creator"
-                description="Turn research articles into publication-ready posters with smart templates."
-              />
-              <ExampleCard
-                title="Ganttrify Pro"
-                description="Generate accurate, beautiful Gantt charts from CSV/Sheets or manual input."
-              />
-              <ExampleCard
-                title="Microbial Assistant"
-                description="Plan discriminative biochemical panels with QC to reach confident IDs."
-              />
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredGPTs.map((gpt) => (
+                <ExampleCard
+                  key={gpt.id}
+                  title={gpt.name}
+                  description={
+                    gpt.description ||
+                    `Specialized assistant for ${gpt.name.toLowerCase()}`
+                  }
+                  avatarUrl={gpt.avatar_url}
+                />
+              ))}
             </div>
           </section>
 
@@ -118,19 +127,36 @@ export default async function Home() {
 function ExampleCard({
   title,
   description,
+  avatarUrl,
 }: {
   title: string;
   description: string;
+  avatarUrl?: string | null;
 }) {
   return (
     <div className="group relative rounded-xl p-[2px] bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400 transition-all duration-300 hover:scale-105">
       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm"></div>
       <Card className="relative bg-white border-white/0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl">
-        <CardHeader className="p-6">
-          <CardTitle className="text-neutral-900 text-lg font-semibold">
-            {title}
-          </CardTitle>
-          <CardDescription className="text-neutral-700 leading-relaxed">
+        <CardHeader className="p-4">
+          <div className="flex items-center gap-3 mb-2">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={`${title} avatar`}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                {title.charAt(0)}
+              </div>
+            )}
+            <CardTitle className="text-neutral-900 text-base font-semibold">
+              {title}
+            </CardTitle>
+          </div>
+          <CardDescription className="text-neutral-700 text-sm leading-relaxed line-clamp-2">
             {description}
           </CardDescription>
         </CardHeader>

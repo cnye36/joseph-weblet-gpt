@@ -31,7 +31,7 @@ export async function middleware(req: NextRequest) {
           res.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          res.cookies.set({ name, value: '', ...options });
+          res.cookies.set({ name, value: "", ...options });
         },
       },
     }
@@ -39,18 +39,21 @@ export async function middleware(req: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
   const isAuthed = Boolean(data.user);
-  const isAuthRoute = req.nextUrl.pathname.startsWith('/login');
-  const isAppRoute = req.nextUrl.pathname.startsWith('/app');
+  const isAuthRoute =
+    req.nextUrl.pathname.startsWith("/login") ||
+    req.nextUrl.pathname.startsWith("/signup");
+  const isAppRoute = req.nextUrl.pathname.startsWith("/app");
 
+  // Redirect unauthenticated users trying to access app routes
   if (!isAuthed && isAppRoute) {
-    const redirectUrl = new URL('/login', req.url);
+    const redirectUrl = new URL("/login", req.url);
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Handle authenticated users accessing auth routes (already logged in)
   if (isAuthed && isAuthRoute) {
-    // Check if user has active subscription before redirecting to app
+    // Check if user is admin
     if (data.user) {
-      // Check if user is admin first
       const { data: adminData } = await supabase
         .from("app_admins")
         .select("email")
@@ -59,53 +62,13 @@ export async function middleware(req: NextRequest) {
 
       const userIsAdmin = isAdminEmail(data.user.email) || Boolean(adminData);
 
-      if (!userIsAdmin) {
-        const { data: subscription } = await supabase
-          .from("subscriptions")
-          .select("status, plan_name, next_billing_date")
-          .eq("user_id", data.user.id)
-          .eq("status", "active")
-          .maybeSingle();
-
-        if (subscription) {
-          const isDayPass = subscription.plan_name === "One-Day Pass";
-          if (isDayPass && subscription.next_billing_date) {
-            const expiryDate = new Date(subscription.next_billing_date);
-            const now = new Date();
-            if (expiryDate >= now) {
-              const redirectUrl = new URL("/app", req.url);
-              return NextResponse.redirect(redirectUrl);
-            }
-          } else if (!isDayPass) {
-            const redirectUrl = new URL("/app", req.url);
-            return NextResponse.redirect(redirectUrl);
-          }
-        }
-      } else {
-        // Admin user, allow access
+      // Admin users always allowed
+      if (userIsAdmin) {
         const redirectUrl = new URL("/app", req.url);
         return NextResponse.redirect(redirectUrl);
       }
-    }
-  }
 
-  if (isAuthed && isAppRoute) {
-    // Check if user has active subscription
-    if (data.user) {
-      // Check if user is admin first
-      const { data: adminData } = await supabase
-        .from("app_admins")
-        .select("email")
-        .eq("email", data.user.email)
-        .maybeSingle();
-
-      const userIsAdmin = isAdminEmail(data.user.email) || Boolean(adminData);
-
-      // Admins don't need subscription
-      if (userIsAdmin) {
-        return res;
-      }
-
+      // Check if regular user has active subscription
       const { data: subscription } = await supabase
         .from("subscriptions")
         .select("status, plan_name, next_billing_date")
@@ -113,22 +76,27 @@ export async function middleware(req: NextRequest) {
         .eq("status", "active")
         .maybeSingle();
 
-      if (!subscription) {
-        const redirectUrl = new URL("/pricing?required=true", req.url);
-        return NextResponse.redirect(redirectUrl);
-      }
-
-      // Check if day pass is expired
-      const isDayPass = subscription.plan_name === "One-Day Pass";
-      if (isDayPass && subscription.next_billing_date) {
-        const expiryDate = new Date(subscription.next_billing_date);
-        const now = new Date();
-        if (expiryDate < now) {
-          const redirectUrl = new URL("/pricing?expired=true", req.url);
+      if (subscription) {
+        const isDayPass = subscription.plan_name === "One-Day Pass";
+        if (isDayPass && subscription.next_billing_date) {
+          const expiryDate = new Date(subscription.next_billing_date);
+          const now = new Date();
+          if (expiryDate >= now) {
+            const redirectUrl = new URL("/app", req.url);
+            return NextResponse.redirect(redirectUrl);
+          }
+        } else if (!isDayPass) {
+          const redirectUrl = new URL("/app", req.url);
           return NextResponse.redirect(redirectUrl);
         }
       }
     }
+  }
+
+  // Allow authenticated users to access app routes
+  // The PricingModal component will handle subscription enforcement
+  if (isAuthed && isAppRoute) {
+    return res;
   }
 
   return res;

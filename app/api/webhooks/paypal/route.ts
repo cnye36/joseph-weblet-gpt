@@ -112,6 +112,13 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleSubscriptionActivated(supabase: Awaited<ReturnType<typeof createClient>>, resource: Record<string, unknown>) {
+  // Check if this is a one-day pass (they don't use PayPal subscriptions)
+  const subscriptionId = resource.id as string;
+  if (subscriptionId?.startsWith("day-pass-")) {
+    console.log("Skipping webhook for one-day pass - not a PayPal subscription");
+    return;
+  }
+
   // Update subscription status to active
   const { error } = await supabase
     .from("subscriptions")
@@ -128,6 +135,13 @@ async function handleSubscriptionActivated(supabase: Awaited<ReturnType<typeof c
 }
 
 async function handleSubscriptionCancelled(supabase: Awaited<ReturnType<typeof createClient>>, resource: Record<string, unknown>) {
+  // Check if this is a one-day pass (they don't use PayPal subscriptions)
+  const subscriptionId = resource.id as string;
+  if (subscriptionId?.startsWith("day-pass-")) {
+    console.log("Skipping webhook for one-day pass - not a PayPal subscription");
+    return;
+  }
+
   // Update subscription status to cancelled
   const { error } = await supabase
     .from("subscriptions")
@@ -143,6 +157,13 @@ async function handleSubscriptionCancelled(supabase: Awaited<ReturnType<typeof c
 }
 
 async function handleSubscriptionSuspended(supabase: Awaited<ReturnType<typeof createClient>>, resource: Record<string, unknown>) {
+  // Check if this is a one-day pass (they don't use PayPal subscriptions)
+  const subscriptionId = resource.id as string;
+  if (subscriptionId?.startsWith("day-pass-")) {
+    console.log("Skipping webhook for one-day pass - not a PayPal subscription");
+    return;
+  }
+
   // Update subscription status to suspended
   const { error } = await supabase
     .from("subscriptions")
@@ -158,7 +179,27 @@ async function handleSubscriptionSuspended(supabase: Awaited<ReturnType<typeof c
 }
 
 async function handleSubscriptionUpdated(supabase: Awaited<ReturnType<typeof createClient>>, resource: Record<string, unknown>) {
-  // Update subscription details
+  // Check if this is a one-day pass (they don't use PayPal subscriptions)
+  const subscriptionId = resource.id as string;
+  if (subscriptionId?.startsWith("day-pass-")) {
+    console.log("Skipping webhook for one-day pass - not a PayPal subscription");
+    return;
+  }
+
+  // Get the subscription to check if it's a one-day pass
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("plan_name")
+    .eq("subscription_id", resource.id)
+    .maybeSingle();
+
+  // Skip if it's a one-day pass (shouldn't happen, but double-check)
+  if (subscription?.plan_name === "One-Day Pass") {
+    console.log("Skipping webhook update for one-day pass");
+    return;
+  }
+
+  // Update subscription details (only for monthly subscriptions)
   const { error } = await supabase
     .from("subscriptions")
     .update({

@@ -1,13 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/server";
 
 export default async function Header() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const isAuthed = Boolean(data.user);
-
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-neutral-200 shadow-sm">
       <nav
@@ -49,27 +44,16 @@ export default async function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          {!isAuthed && (
-            <>
-              <Button asChild size="sm" variant="ghost">
-                <Link href="/login" aria-label="Sign in">
-                  Sign in
-                </Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link href="/pricing" aria-label="Sign up">
-                  Get Started
-                </Link>
-              </Button>
-            </>
-          )}
-          {isAuthed && (
-            <Button asChild size="sm">
-              <Link href="/app" aria-label="Open app">
-                Open App
-              </Link>
-            </Button>
-          )}
+          <Button asChild size="sm" variant="ghost">
+            <Link href="/login" aria-label="Sign in">
+              Sign in
+            </Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/signup" aria-label="Sign up">
+              Sign Up
+            </Link>
+          </Button>
         </div>
       </nav>
     </header>

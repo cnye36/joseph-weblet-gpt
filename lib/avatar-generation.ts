@@ -10,18 +10,30 @@ export interface AvatarGenerationOptions {
 /**
  * Generate an AI avatar for a GPT bot using DALL-E
  */
-export async function generateBotAvatar(options: AvatarGenerationOptions): Promise<string | null> {
-  const { botName, botDescription, botSystem, style = 'professional' } = options;
-  
+export async function generateBotAvatar(
+  options: AvatarGenerationOptions
+): Promise<string | null> {
+  const {
+    botName,
+    botDescription,
+    botSystem,
+    style = "professional",
+  } = options;
+
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
-    console.log('No OpenAI API key found, generating fallback avatar');
+    console.log("No OpenAI API key found, generating fallback avatar");
     return await generateFallbackAvatar(options);
   }
-  
+
   // Create a detailed prompt for avatar generation
-  const avatarPrompt = createAvatarPrompt(botName, botDescription, botSystem, style);
-  
+  const avatarPrompt = createAvatarPrompt(
+    botName,
+    botDescription,
+    botSystem,
+    style
+  );
+
   try {
     // Generate image using OpenAI DALL-E directly
     const response = await fetch(
@@ -33,35 +45,52 @@ export async function generateBotAvatar(options: AvatarGenerationOptions): Promi
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "GPT-image-1-mini",
+          model: "gpt-image-1-mini",
           prompt: avatarPrompt,
           n: 1,
           size: "1024x1024",
-          quality: "standard",
-          style: "natural",
+          quality: "low",
         }),
       }
     );
 
     if (!response.ok) {
-      console.error('DALL-E API error:', await response.text());
+      console.error("DALL-E API error:", await response.text());
       return await generateFallbackAvatar(options);
     }
 
     const data = await response.json();
-    const imageUrl = data.data?.[0]?.url;
-    
-    if (!imageUrl) {
-      console.error('No image URL returned from DALL-E');
+    const imageData = data.data?.[0];
+
+    // Handle different response formats:
+    // - DALL-E 2/3 returns URLs
+    // - gpt-image-1 returns base64-encoded images
+    let imageBuffer: ArrayBuffer;
+
+    if (imageData?.url) {
+      // Download the image from URL (DALL-E 2/3)
+      const imageResponse = await fetch(imageData.url);
+      if (!imageResponse.ok) {
+        throw new Error("Failed to download image");
+      }
+      imageBuffer = await imageResponse.arrayBuffer();
+    } else if (imageData?.b64_json) {
+      // Decode base64 image (gpt-image-1)
+      const base64Data = imageData.b64_json;
+      imageBuffer = Buffer.from(base64Data, "base64").buffer;
+    } else {
+      console.error("No image URL or base64 data returned from DALL-E");
       return await generateFallbackAvatar(options);
     }
 
-    // Download the image and upload to Supabase storage
-    const avatarUrl = await uploadAvatarToSupabase(imageUrl, options.botName);
+    // Upload image buffer to Supabase storage
+    const avatarUrl = await uploadAvatarToSupabaseFromBuffer(
+      imageBuffer,
+      options.botName
+    );
     return avatarUrl;
-    
   } catch (error) {
-    console.error('Error generating avatar:', error);
+    console.error("Error generating avatar:", error);
     return await generateFallbackAvatar(options);
   }
 }
@@ -70,80 +99,130 @@ export async function generateBotAvatar(options: AvatarGenerationOptions): Promi
  * Create a detailed prompt for avatar generation based on bot characteristics
  */
 function createAvatarPrompt(
-  botName: string, 
-  botDescription: string, 
-  botSystem: string, 
+  botName: string,
+  botDescription: string,
+  botSystem: string,
   style: string
 ): string {
   // Extract key themes from the bot's purpose
   const themes = extractThemes(botName, botDescription, botSystem);
-  
+
   const basePrompt = `Create a professional AI assistant avatar for "${botName}". `;
-  
+
   const styleDescriptions = {
-    professional: 'Clean, modern, corporate style with subtle tech elements',
-    friendly: 'Warm, approachable design with friendly colors and soft shapes',
-    scientific: 'Technical, precise design with scientific symbols and clean lines',
-    creative: 'Artistic, innovative design with creative elements and vibrant colors'
+    professional: "Clean, modern, corporate style with subtle tech elements",
+    friendly: "Warm, approachable design with friendly colors and soft shapes",
+    scientific:
+      "Technical, precise design with scientific symbols and clean lines",
+    creative:
+      "Artistic, innovative design with creative elements and vibrant colors",
   };
-  
-  const themeContext = themes.length > 0 
-    ? `The avatar should reflect these themes: ${themes.join(', ')}. `
-    : '';
-    
-  const styleContext = styleDescriptions[style as keyof typeof styleDescriptions] || styleDescriptions.professional;
-  
+
+  const themeContext =
+    themes.length > 0
+      ? `The avatar should reflect these themes: ${themes.join(", ")}. `
+      : "";
+
+  const styleContext =
+    styleDescriptions[style as keyof typeof styleDescriptions] ||
+    styleDescriptions.professional;
+
   return `${basePrompt}${themeContext}Style: ${styleContext}. The avatar should be a circular, minimalist design suitable for a chat interface. Avoid text or words in the image. Use a clean background. The design should be distinctive and memorable while remaining professional.`;
 }
 
 /**
  * Extract key themes from bot information
  */
-function extractThemes(botName: string, botDescription: string, botSystem: string): string[] {
+function extractThemes(
+  botName: string,
+  botDescription: string,
+  botSystem: string
+): string[] {
   const text = `${botName} ${botDescription} ${botSystem}`.toLowerCase();
   const themes: string[] = [];
-  
+
   // Research/Academic themes
-  if (text.includes('research') || text.includes('academic') || text.includes('poster') || text.includes('conference')) {
-    themes.push('research', 'academic');
+  if (
+    text.includes("research") ||
+    text.includes("academic") ||
+    text.includes("poster") ||
+    text.includes("conference")
+  ) {
+    themes.push("research", "academic");
   }
-  
+
   // Project management themes
-  if (text.includes('gantt') || text.includes('project') || text.includes('timeline') || text.includes('chart')) {
-    themes.push('project management', 'planning');
+  if (
+    text.includes("gantt") ||
+    text.includes("project") ||
+    text.includes("timeline") ||
+    text.includes("chart")
+  ) {
+    themes.push("project management", "planning");
   }
-  
+
   // Scientific themes
-  if (text.includes('microbial') || text.includes('biochemistry') || text.includes('microorganism') || text.includes('laboratory')) {
-    themes.push('microbiology', 'laboratory');
+  if (
+    text.includes("microbial") ||
+    text.includes("biochemistry") ||
+    text.includes("microorganism") ||
+    text.includes("laboratory")
+  ) {
+    themes.push("microbiology", "laboratory");
   }
-  
+
   // Technical themes
-  if (text.includes('data') || text.includes('analysis') || text.includes('technical') || text.includes('system')) {
-    themes.push('technical', 'data analysis');
+  if (
+    text.includes("data") ||
+    text.includes("analysis") ||
+    text.includes("technical") ||
+    text.includes("system")
+  ) {
+    themes.push("technical", "data analysis");
   }
-  
+
   return themes;
 }
 
 /**
- * Upload avatar image to Supabase storage
+ * Upload avatar image to Supabase storage from a URL
+ * @deprecated Use uploadAvatarToSupabaseFromBuffer instead
  */
-async function uploadAvatarToSupabase(imageUrl: string, botName: string): Promise<string | null> {
+async function uploadAvatarToSupabase(
+  imageUrl: string,
+  botName: string
+): Promise<string | null> {
   try {
     // Download the image
     const imageResponse = await fetch(imageUrl);
     if (!imageResponse.ok) {
-      throw new Error('Failed to download image');
+      throw new Error("Failed to download image");
     }
-    
+
     const imageBuffer = await imageResponse.arrayBuffer();
+    return await uploadAvatarToSupabaseFromBuffer(imageBuffer, botName);
+  } catch (error) {
+    console.error("Error uploading avatar to Supabase:", error);
+    return null;
+  }
+}
+
+/**
+ * Upload avatar image to Supabase storage from a buffer
+ */
+async function uploadAvatarToSupabaseFromBuffer(
+  imageBuffer: ArrayBuffer,
+  botName: string
+): Promise<string | null> {
+  try {
     const imageData = new Uint8Array(imageBuffer);
-    
+
     // Create filename
     const timestamp = Date.now();
-    const filename = `avatar-${botName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}.png`;
-    
+    const filename = `avatar-${botName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")}-${timestamp}.png`;
+
     // Upload to Supabase storage
     const supabase = await createClient();
     const { error } = await supabase.storage
@@ -152,21 +231,20 @@ async function uploadAvatarToSupabase(imageUrl: string, botName: string): Promis
         contentType: "image/png",
         upsert: false,
       });
-    
+
     if (error) {
-      console.error('Supabase upload error:', error);
+      console.error("Supabase upload error:", error);
       return null;
     }
-    
+
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('bot-avatars')
+      .from("bot-avatars")
       .getPublicUrl(filename);
-    
+
     return urlData.publicUrl;
-    
   } catch (error) {
-    console.error('Error uploading avatar to Supabase:', error);
+    console.error("Error uploading avatar to Supabase:", error);
     return null;
   }
 }

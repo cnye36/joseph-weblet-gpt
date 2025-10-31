@@ -475,7 +475,23 @@ export default function BillingSettings() {
                         Expires:{" "}
                         {new Date(
                           subscription.next_billing_date
-                        ).toLocaleDateString()}
+                        ).toLocaleDateString("en-US", {
+                          timeZone: "UTC",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}{" "}
+                        at{" "}
+                        {new Date(
+                          subscription.next_billing_date
+                        ).toLocaleTimeString("en-US", {
+                          timeZone: "UTC",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                        })}{" "}
+                        UTC
                       </p>
                     </>
                   ) : (
@@ -532,9 +548,11 @@ export default function BillingSettings() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Subscribe to unlock premium features and support development.
                 </p>
-                <Button onClick={() => {
-                  window.location.href = "/pricing";
-                }}>
+                <Button
+                  onClick={() => {
+                    window.location.href = "/pricing";
+                  }}
+                >
                   View Plans
                 </Button>
               </div>
