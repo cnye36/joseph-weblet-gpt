@@ -134,21 +134,21 @@ function ExampleCard({
   avatarUrl?: string | null;
 }) {
   return (
-    <div className="group relative rounded-xl p-[2px] bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400 transition-all duration-300 hover:scale-105">
+    <div className="group relative rounded-xl p-[2px] bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400 transition-all duration-300 hover:scale-105 h-full">
       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm"></div>
-      <Card className="relative bg-white border-white/0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl">
-        <CardHeader className="p-4">
-          <div className="flex items-center gap-3 mb-2">
+      <div className="relative bg-white rounded-[10px] shadow-sm hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+        <div className="p-4 flex flex-col gap-2 flex-1">
+          <div className="flex items-center gap-3">
             {avatarUrl ? (
               <Image
                 src={avatarUrl}
                 alt={`${title} avatar`}
                 width={32}
                 height={32}
-                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm flex-shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                 {title.charAt(0)}
               </div>
             )}
@@ -159,8 +159,8 @@ function ExampleCard({
           <CardDescription className="text-neutral-700 text-sm leading-relaxed line-clamp-2">
             {description}
           </CardDescription>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
