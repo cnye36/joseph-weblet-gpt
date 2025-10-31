@@ -22,16 +22,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Check if user is admin
-        const { data: adminData } = await supabase
-          .from("app_admins")
-          .select("email")
-          .eq("email", user.email)
-          .maybeSingle();
-
+        // Check if user is admin - THIS MUST HAPPEN FIRST
         const isAdminEmail = (email: string | undefined): boolean => {
           if (!email) return false;
           const normalizedEmail = email.toLowerCase().trim();
+
+          // Get admin emails from environment variables
           const envEmails: string[] = (
             process.env.NEXT_PUBLIC_ADMIN_EMAILS &&
             process.env.NEXT_PUBLIC_ADMIN_EMAILS.length > 0
@@ -46,12 +42,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             .split(",")
             .map((s) => (s || "").trim().toLowerCase())
             .filter((s) => s.length > 0);
+
+          // Debug logging
+          console.log("Admin check:", {
+            userEmail: normalizedEmail,
+            adminEmails: envEmails,
+            isMatch: envEmails.includes(normalizedEmail),
+          });
+
           return envEmails.includes(normalizedEmail);
         };
 
+        // Check admin database
+        const { data: adminData } = await supabase
+          .from("app_admins")
+          .select("email")
+          .eq("email", user.email)
+          .maybeSingle();
+
         const userIsAdmin = isAdminEmail(user.email) || Boolean(adminData);
 
+        console.log("Admin status check:", {
+          email: user.email,
+          isAdminFromEnv: isAdminEmail(user.email),
+          isAdminFromDB: Boolean(adminData),
+          isAdmin: userIsAdmin,
+        });
+
         if (userIsAdmin) {
+          // Admins have full access, no subscription required
+          console.log("User is admin - bypassing subscription check");
+          setShowModal(false);
           setIsChecking(false);
           return;
         }
@@ -107,7 +128,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-svh bg-white">
       {children}
-      <PricingModal open={showModal} required={true} />
+      <PricingModal
+        open={showModal}
+        required={true}
+        onClose={() => setShowModal(false)}
+      />
     </main>
   );
 }

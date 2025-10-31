@@ -26,13 +26,16 @@ interface PricingModalProps {
 export default function PricingModal({ open, onClose, required = false }: PricingModalProps) {
   const router = useRouter();
   const supabase = createClient();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   const [paypalPlanId, setPaypalPlanId] = useState<string | null>(null);
   const [paypalReady, setPaypalReady] = useState(false);
   const [paypalOrderReady, setPaypalOrderReady] = useState(false);
   const [showPayPalButtons, setShowPayPalButtons] = useState(false);
   const [showOneDayButtons, setShowOneDayButtons] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<"day" | "monthly" | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<"day" | "monthly" | null>(
+    null
+  );
   const [notice, setNotice] = useState<{
     open: boolean;
     title: string;
@@ -105,7 +108,9 @@ export default function PricingModal({ open, onClose, required = false }: Pricin
   }
 
   const renderPayPalButtons = useCallback(() => {
-    const paypalContainer = document.getElementById("modal-paypal-button-container");
+    const paypalContainer = document.getElementById(
+      "modal-paypal-button-container"
+    );
     if (!paypalContainer || !window.paypal) return;
 
     paypalContainer.innerHTML = "";
@@ -163,9 +168,12 @@ export default function PricingModal({ open, onClose, required = false }: Pricin
 
             // Only prevent if subscription is truly active (not expired)
             if (existingSubscription) {
-              const isDayPass = existingSubscription.plan_name === "One-Day Pass";
+              const isDayPass =
+                existingSubscription.plan_name === "One-Day Pass";
               if (isDayPass && existingSubscription.next_billing_date) {
-                const expiryDate = new Date(existingSubscription.next_billing_date);
+                const expiryDate = new Date(
+                  existingSubscription.next_billing_date
+                );
                 const now = new Date();
                 if (expiryDate < now) {
                   // Day pass expired, continue with new subscription
@@ -254,7 +262,9 @@ export default function PricingModal({ open, onClose, required = false }: Pricin
   }, [paypalPlanId, supabase]);
 
   const renderOneDayButtons = useCallback(() => {
-    const container = document.getElementById("modal-paypal-one-day-button-container");
+    const container = document.getElementById(
+      "modal-paypal-one-day-button-container"
+    );
     if (!container || !window.paypal) return;
 
     container.innerHTML = "";
@@ -321,9 +331,12 @@ export default function PricingModal({ open, onClose, required = false }: Pricin
 
             // Only prevent if subscription is truly active (not expired)
             if (existingSubscription) {
-              const isDayPass = existingSubscription.plan_name === "One-Day Pass";
+              const isDayPass =
+                existingSubscription.plan_name === "One-Day Pass";
               if (isDayPass && existingSubscription.next_billing_date) {
-                const expiryDate = new Date(existingSubscription.next_billing_date);
+                const expiryDate = new Date(
+                  existingSubscription.next_billing_date
+                );
                 const now = new Date();
                 if (expiryDate < now) {
                   // Day pass expired, continue with new purchase
@@ -431,7 +444,122 @@ export default function PricingModal({ open, onClose, required = false }: Pricin
     }
   }, [showOneDayButtons, paypalOrderReady, renderOneDayButtons]);
 
-  if (!open) return null;
+  // Check if user is admin - run immediately when modal opens
+  useEffect(() => {
+    async function checkAdminStatus() {
+      if (!open) return;
+
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          setIsAdmin(false);
+          return;
+        }
+
+        // Check environment variables for admin emails
+        const isAdminEmail = (email: string | undefined): boolean => {
+          if (!email) return false;
+          const normalizedEmail = email.toLowerCase().trim();
+          const envEmails: string[] = (
+            process.env.NEXT_PUBLIC_ADMIN_EMAILS &&
+            process.env.NEXT_PUBLIC_ADMIN_EMAILS.length > 0
+              ? process.env.NEXT_PUBLIC_ADMIN_EMAILS
+              : [
+                  process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+                  process.env.NEXT_PUBLIC_ADMIN_EMAIL_2,
+                ]
+                  .filter(Boolean)
+                  .join(",")
+          )
+            .split(",")
+            .map((s) => (s || "").trim().toLowerCase())
+            .filter((s) => s.length > 0);
+
+          const isMatch = envEmails.includes(normalizedEmail);
+
+          console.log("PricingModal admin check:", {
+            userEmail: normalizedEmail,
+            adminEmails: envEmails,
+            envVars: {
+              ADMIN_EMAILS: process.env.NEXT_PUBLIC_ADMIN_EMAILS,
+              ADMIN_EMAIL: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+              ADMIN_EMAIL_2: process.env.NEXT_PUBLIC_ADMIN_EMAIL_2,
+            },
+            isMatch,
+          });
+
+          return isMatch;
+        };
+
+        // Check admin database
+        const { data: adminData } = await supabase
+          .from("app_admins")
+          .select("email")
+          .eq("email", user.email)
+          .maybeSingle();
+
+        const userIsAdmin = isAdminEmail(user.email) || Boolean(adminData);
+
+        console.log("PricingModal admin status:", {
+          email: user.email,
+          isAdminFromEnv: isAdminEmail(user.email),
+          isAdminFromDB: Boolean(adminData),
+          isAdmin: userIsAdmin,
+        });
+
+        setIsAdmin(userIsAdmin);
+
+        // If user is admin and modal is required, force reload to clear modal state
+        if (userIsAdmin && required) {
+          console.log(
+            "Admin detected in PricingModal - preventing modal display"
+          );
+          // Force reload to clear the modal state from parent
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+      }
+    }
+
+    checkAdminStatus();
+  }, [open, required, supabase]);
+
+  // EMERGENCY BYPASS: Check localStorage for admin override
+  useEffect(() => {
+    if (open && typeof window !== "undefined") {
+      const adminOverride = localStorage.getItem("admin_override");
+      if (adminOverride === "true") {
+        console.log("Admin override detected in localStorage");
+        setIsAdmin(true);
+        if (required && onClose) {
+          onClose();
+        }
+      }
+    }
+  }, [open, required, onClose]);
+
+  // Don't show modal if user is admin
+  if (!open || isAdmin === true) return null;
+
+  // Show loading state while checking admin status
+  if (open && isAdmin === null) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative z-10 rounded-lg bg-white p-6 shadow-xl">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-sm text-muted-foreground">Verifying access...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -450,7 +578,9 @@ export default function PricingModal({ open, onClose, required = false }: Pricin
             </button>
           )}
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-center mb-2">Choose Your Plan</h2>
+            <h2 className="text-3xl font-bold text-center mb-2">
+              Choose Your Plan
+            </h2>
             <p className="text-center text-neutral-600">
               {required
                 ? "You need an active subscription to access the app. Please select a plan below."
