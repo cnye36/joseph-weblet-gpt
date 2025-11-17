@@ -5,14 +5,15 @@ import { UIMessage, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Image as ImageIcon, Send, BookOpen } from "lucide-react";
+import { Image as ImageIcon, Send, BookOpen, FlaskConical } from "lucide-react";
 import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import MessageRenderer from "./MessageRenderer";
+import { ToolCallDisplay } from "./ToolCallDisplay";
 
 export default function Chat({
   botId,
@@ -26,7 +27,18 @@ export default function Chat({
   const searchParams = useSearchParams();
   const chatIdRef = useRef<string | null>(chatId);
   const [enableMCP, setEnableMCP] = useState(false);
-  const isNewChat = searchParams.get('new') === 'true';
+  const [enableSimulation, setEnableSimulation] = useState(false);
+
+  // Use refs to track current state for dynamic body values (AI SDK v5)
+  const enableMCPRef = useRef(enableMCP);
+  const enableSimulationRef = useRef(enableSimulation);
+
+  useEffect(() => {
+    enableMCPRef.current = enableMCP;
+    enableSimulationRef.current = enableSimulation;
+  }, [enableMCP, enableSimulation]);
+
+  const isNewChat = searchParams.get("new") === "true";
   useEffect(() => {
     chatIdRef.current = chatId;
   }, [chatId]);
@@ -36,9 +48,13 @@ export default function Chat({
       () =>
         new DefaultChatTransport({
           api: "/api/chat",
-          body: { botId, enableMCP },
+          body: () => ({
+            botId,
+            enableMCP: enableMCPRef.current,
+            enableSimulation: enableSimulationRef.current,
+          }),
         }),
-      [botId, enableMCP]
+      [botId]
     ),
     onFinish: async ({ message }) => {
       const finishedChatId = chatIdRef.current;
@@ -150,6 +166,19 @@ export default function Chat({
                             type: "file";
                             file: { name: string; type: string; size: number };
                           }
+                        | {
+                            type: "tool-call";
+                            toolCallId: string;
+                            toolName: string;
+                            args: Record<string, unknown>;
+                          }
+                        | {
+                            type: "tool-result";
+                            toolCallId: string;
+                            toolName: string;
+                            result: unknown;
+                            args?: Record<string, unknown>;
+                          }
                         | { type: string };
                       const part = p as unknown as UIInlinePart;
                       if (part.type === "text") {
@@ -213,6 +242,42 @@ export default function Chat({
                               ({Math.ceil(file.size / 1024)} KB)
                             </span>
                           </div>
+                        );
+                      }
+                      if (part.type === "tool-call") {
+                        const toolCall = part as {
+                          type: "tool-call";
+                          toolCallId: string;
+                          toolName: string;
+                          args: Record<string, unknown>;
+                        };
+                        return (
+                          <ToolCallDisplay
+                            key={idx}
+                            toolName={toolCall.toolName}
+                            toolCallId={toolCall.toolCallId}
+                            args={toolCall.args}
+                            state="partial-call"
+                          />
+                        );
+                      }
+                      if (part.type === "tool-result") {
+                        const toolResult = part as {
+                          type: "tool-result";
+                          toolCallId: string;
+                          toolName: string;
+                          result: unknown;
+                          args?: Record<string, unknown>;
+                        };
+                        return (
+                          <ToolCallDisplay
+                            key={idx}
+                            toolName={toolResult.toolName}
+                            toolCallId={toolResult.toolCallId}
+                            args={toolResult.args || {}}
+                            result={toolResult.result}
+                            state="result"
+                          />
                         );
                       }
                       return null;
@@ -414,6 +479,20 @@ export default function Chat({
             />
             <span className="text-xs text-muted-foreground">
               {enableMCP ? "Enabled" : "Disabled"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+            <FlaskConical className="size-4 text-muted-foreground" />
+            <Label htmlFor="simulation-toggle" className="text-sm font-medium">
+              Simulation MCP
+            </Label>
+            <Switch
+              id="simulation-toggle"
+              checked={enableSimulation}
+              onCheckedChange={setEnableSimulation}
+            />
+            <span className="text-xs text-muted-foreground">
+              {enableSimulation ? "Enabled" : "Disabled"}
             </span>
           </div>
           <div className="relative">

@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export default function SubscriptionCountdown() {
+  const { state } = useSidebar();
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,7 +36,7 @@ export default function SubscriptionCountdown() {
         }
 
         const expiryDate = new Date(subscription.next_billing_date);
-        
+
         const updateCountdown = () => {
           const now = new Date();
           const diff = expiryDate.getTime() - now.getTime();
@@ -52,7 +54,9 @@ export default function SubscriptionCountdown() {
           const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
           setTimeLeft(
-            `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+            `${hours.toString().padStart(2, "0")}:${minutes
+              .toString()
+              .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
           );
         };
 
@@ -80,7 +84,7 @@ export default function SubscriptionCountdown() {
     };
   }, [supabase]);
 
-  if (loading || !timeLeft) {
+  if (loading || !timeLeft || state === "collapsed") {
     return null;
   }
 
@@ -88,7 +92,11 @@ export default function SubscriptionCountdown() {
     <div className="px-2 py-2 border-t border-sidebar-border">
       <div className="px-2 py-1.5 text-xs text-muted-foreground">
         <div className="font-medium mb-0.5">Time Left:</div>
-        <div className={`font-mono text-sm ${timeLeft === "Expired" ? "text-red-600" : "text-foreground"}`}>
+        <div
+          className={`font-mono text-sm ${
+            timeLeft === "Expired" ? "text-red-600" : "text-foreground"
+          }`}
+        >
           {timeLeft}
         </div>
       </div>

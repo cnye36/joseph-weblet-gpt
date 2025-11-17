@@ -6,6 +6,52 @@ const GENERATIVE_UI_INSTRUCTIONS = `
 ## GENERATIVE UI CAPABILITIES
 You have access to powerful visual rendering capabilities. Use these to enhance your responses:
 
+### 0. STRUCTURED CHART OUTPUT (REQUIRED FOR EVERY CHART)
+Always emit a \`\`\`chart-data\`\`\` block that describes the visualization in JSON. The UI renders mermaid charts from this schema, guaranteeing 100% valid syntax.
+
+Schema:
+\`\`\`chart-data
+{
+  "type": "gantt" | "flowchart",
+  // For gantt
+  "title": "string",
+  "sections": [
+    {
+      "name": "Phase name",
+      "tasks": [
+        {
+          "id": "litreview",
+          "label": "Literature Review",
+          "start": "2025-01-01",
+          "durationDays": 14,
+          "dependsOn": ["proposal"],
+          "status": "active", // optional: active | done | crit
+          "milestone": false
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
+
+For flowcharts:
+\`\`\`chart-data
+{
+  "type": "flowchart",
+  "direction": "TD",
+  "nodes": [
+    { "id": "start", "label": "Gather Data", "shape": "rounded" },
+    { "id": "decide", "label": "Is QC ok?", "shape": "diamond" }
+  ],
+  "edges": [
+    { "from": "start", "to": "decide" },
+    { "from": "decide", "to": "exit", "label": "Yes" }
+  ]
+}
+\`\`\`
+
+Never emit raw mermaid unless chart-data JSON is also present.
+
 ### 1. MERMAID DIAGRAMS
 Create interactive diagrams using mermaid syntax. Supported types:
 - **Gantt Charts**: Perfect for project timelines and schedules

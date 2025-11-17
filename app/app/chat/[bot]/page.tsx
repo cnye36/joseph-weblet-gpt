@@ -80,25 +80,48 @@ async function BotHeader({
   const supabase = await createClient();
   const { data } = await supabase
     .from("bots")
-    .select("name, avatar_url")
+    .select("name, avatar_url, description, model")
     .eq("id", botId)
     .maybeSingle();
+
+  // Truncate description to first ~15 words
+  const truncateDescription = (desc: string | null | undefined) => {
+    if (!desc) return null;
+    const words = desc.split(/\s+/);
+    if (words.length <= 15) return desc;
+    return words.slice(0, 15).join(" ") + "...";
+  };
+
+  const truncatedDesc = truncateDescription(data?.description);
+
   return (
-    <div className="border-b px-4 py-3 text-sm flex items-center space-x-3">
+    <div className="border-b px-4 py-3 flex items-center space-x-3">
       {data?.avatar_url ? (
         <Image
           src={data.avatar_url}
           alt={`${data.name || fallbackName} avatar`}
           width={32}
           height={32}
-          className="w-8 h-8 rounded-full object-cover border border-gray-200"
+          className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0"
         />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
           {(data?.name || fallbackName).charAt(0)}
         </div>
       )}
-      <span>{data?.name ?? fallbackName}</span>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm">{data?.name ?? fallbackName}</div>
+        {truncatedDesc && (
+          <div className="text-xs text-muted-foreground line-clamp-1">
+            {truncatedDesc}
+          </div>
+        )}
+        {data?.model && (
+          <div className="text-xs text-muted-foreground/80 mt-0.5">
+            Model: {data.model}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
