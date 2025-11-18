@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, memo, useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -63,17 +63,31 @@ const SimulationRendererComponent = ({
   const [showControls, setShowControls] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Memoize initial parameter values to prevent unnecessary re-calculations
+  const initialParameters = useMemo(() => {
+    const params: Record<string, number> = {};
+    if (initialData.parameters) {
+      Object.entries(initialData.parameters).forEach(([key, config]) => {
+        params[key] = config.value;
+      });
+    }
+    return params;
+  }, [initialData.parameters]);
+
   // Check if parameters have changed from initial values
   useEffect(() => {
-    if (!initialData.parameters) return;
-    
+    if (Object.keys(initialParameters).length === 0) {
+      setHasChanges(false);
+      return;
+    }
+
     const changed = Object.entries(parameters).some(([key, value]) => {
-      const initialValue = initialData.parameters?.[key]?.value;
+      const initialValue = initialParameters[key];
       return initialValue !== undefined && Math.abs(value - initialValue) > 0.001;
     });
-    
+
     setHasChanges(changed);
-  }, [parameters, initialData.parameters]);
+  }, [parameters, initialParameters]);
 
   const handleParameterChange = useCallback((key: string, value: number[]) => {
     setParameters((prev) => ({
@@ -419,14 +433,14 @@ const SimulationRendererComponent = ({
 };
 
 // Memoize the component to prevent unnecessary re-renders during streaming
-// Only re-render if initialData.data length changes (indicates new complete data)
+// Only re-render if initialData reference or onRerun callback changes
 export const SimulationRenderer = memo(SimulationRendererComponent, (prevProps, nextProps) => {
-  // Only re-render if data length changed (new simulation data loaded)
-  const prevDataLength = prevProps.initialData.data?.length || 0;
-  const nextDataLength = nextProps.initialData.data?.length || 0;
-
   // Return true to SKIP re-render, false to allow re-render
-  return prevDataLength === nextDataLength;
+  // With stable keys from parent, we can do simple reference comparison
+  return (
+    prevProps.initialData === nextProps.initialData &&
+    prevProps.onRerun === nextProps.onRerun
+  );
 });
 
 

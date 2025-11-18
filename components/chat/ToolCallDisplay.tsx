@@ -201,19 +201,22 @@ export function ToolCallDisplay({
   const isSimulationResult = (res: unknown): res is SimulationResult => {
     if (!res || typeof res !== "object") return false;
     const obj = res as Record<string, unknown>;
-    
+
     // Check for explicit simulation flag
     if (obj.isSimulation === true) return true;
-    
+
     // Check for simulation data structure
     if (obj.data && Array.isArray(obj.data) && obj.data.length > 0) {
       return true;
     }
-    
+
     return false;
   };
 
-  const simulationResult = result && isSimulationResult(result) ? result : null;
+  // Memoize simulation result to prevent creating new object references on every render
+  const simulationResult = useMemo(() => {
+    return result && isSimulationResult(result) ? result : null;
+  }, [result]);
 
   const isArxivTool = toolName.toLowerCase().includes("arxiv");
 
@@ -423,7 +426,10 @@ const renderGenericProcessing = () => (
       {/* Render simulation visualization if result is a simulation */}
       {simulationResult && (
         <div className="px-3 pb-3">
-          <SimulationRenderer initialData={simulationResult} />
+          <SimulationRenderer
+            key={`sim-${toolCallId}-${simulationResult.data?.length || 0}`}
+            initialData={simulationResult}
+          />
         </div>
       )}
 
