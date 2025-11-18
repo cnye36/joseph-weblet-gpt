@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo, useMemo } from "react";
+import { useState, useEffect, useCallback, memo, useRef } from "react";
 import {
   LineChart,
   Line,
@@ -63,31 +63,30 @@ const SimulationRendererComponent = ({
   const [showControls, setShowControls] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Memoize initial parameter values to prevent unnecessary re-calculations
-  const initialParameters = useMemo(() => {
-    const params: Record<string, number> = {};
-    if (initialData.parameters) {
-      Object.entries(initialData.parameters).forEach(([key, config]) => {
-        params[key] = config.value;
-      });
-    }
-    return params;
-  }, [initialData.parameters]);
+  // Store initial parameters in a ref so they never change (only set once on mount)
+  const initialParametersRef = useRef<Record<string, number>>({});
+
+  // Initialize the ref only once
+  if (Object.keys(initialParametersRef.current).length === 0 && initialData.parameters) {
+    Object.entries(initialData.parameters).forEach(([key, config]) => {
+      initialParametersRef.current[key] = config.value;
+    });
+  }
 
   // Check if parameters have changed from initial values
   useEffect(() => {
-    if (Object.keys(initialParameters).length === 0) {
+    if (Object.keys(initialParametersRef.current).length === 0) {
       setHasChanges(false);
       return;
     }
 
     const changed = Object.entries(parameters).some(([key, value]) => {
-      const initialValue = initialParameters[key];
+      const initialValue = initialParametersRef.current[key];
       return initialValue !== undefined && Math.abs(value - initialValue) > 0.001;
     });
 
     setHasChanges(changed);
-  }, [parameters, initialParameters]);
+  }, [parameters]); // Only depend on parameters, not initialParameters
 
   const handleParameterChange = useCallback((key: string, value: number[]) => {
     setParameters((prev) => ({
@@ -433,15 +432,8 @@ const SimulationRendererComponent = ({
 };
 
 // Memoize the component to prevent unnecessary re-renders during streaming
-// Only re-render if initialData reference or onRerun callback changes
-export const SimulationRenderer = memo(SimulationRendererComponent, (prevProps, nextProps) => {
-  // Return true to SKIP re-render, false to allow re-render
-  // With stable keys from parent, we can do simple reference comparison
-  return (
-    prevProps.initialData === nextProps.initialData &&
-    prevProps.onRerun === nextProps.onRerun
-  );
-});
+// Use default shallow comparison for props
+export const SimulationRenderer = memo(SimulationRendererComponent);
 
 
 

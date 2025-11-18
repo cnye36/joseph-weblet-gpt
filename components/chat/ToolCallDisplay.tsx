@@ -188,6 +188,22 @@ const extractArxivPapers = (data: unknown, depth = 0): ArxivPaper[] => {
   return [];
 };
 
+// Helper function to check if result is a simulation (defined outside component)
+const isSimulationResult = (res: unknown): res is SimulationResult => {
+  if (!res || typeof res !== "object") return false;
+  const obj = res as Record<string, unknown>;
+
+  // Check for explicit simulation flag
+  if (obj.isSimulation === true) return true;
+
+  // Check for simulation data structure
+  if (obj.data && Array.isArray(obj.data) && obj.data.length > 0) {
+    return true;
+  }
+
+  return false;
+};
+
 export function ToolCallDisplay({
   toolName,
   toolCallId,
@@ -196,22 +212,6 @@ export function ToolCallDisplay({
   state,
 }: ToolCallDisplayProps) {
   const [showPayload, setShowPayload] = useState(false);
-
-  // Check if result is a simulation
-  const isSimulationResult = (res: unknown): res is SimulationResult => {
-    if (!res || typeof res !== "object") return false;
-    const obj = res as Record<string, unknown>;
-
-    // Check for explicit simulation flag
-    if (obj.isSimulation === true) return true;
-
-    // Check for simulation data structure
-    if (obj.data && Array.isArray(obj.data) && obj.data.length > 0) {
-      return true;
-    }
-
-    return false;
-  };
 
   // Memoize simulation result to prevent creating new object references on every render
   const simulationResult = useMemo(() => {
