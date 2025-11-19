@@ -24,6 +24,58 @@ const BodySchema = z.object({
 export const runtime = "edge";
 
 export async function POST(req: Request) {
+  // Track MCP clients for cleanup
+  let arxivClient:
+    | Awaited<ReturnType<typeof experimental_createMCPClient>>
+    | undefined;
+  let simulationClient:
+    | Awaited<ReturnType<typeof experimental_createMCPClient>>
+    | undefined;
+
+  // Cleanup function to close MCP clients
+  const cleanupMCPClients = async () => {
+    const closePromises = [];
+    if (arxivClient) {
+      closePromises.push(
+        arxivClient.close().catch((err) => {
+          const errorCode = (err as { code?: string })?.code;
+          const errorName = err instanceof Error ? err.name : "";
+          if (
+            errorName !== "AbortError" &&
+            errorCode !== "ECONNRESET" &&
+            !errorCode?.includes("ECONNRESET")
+          ) {
+            console.error("Error closing ArXiv MCP client:", err);
+          }
+        })
+      );
+    }
+    if (simulationClient) {
+      closePromises.push(
+        simulationClient.close().catch((err) => {
+          const errorCode = (err as { code?: string })?.code;
+          const errorName = err instanceof Error ? err.name : "";
+          if (
+            errorName !== "AbortError" &&
+            errorCode !== "ECONNRESET" &&
+            !errorCode?.includes("ECONNRESET")
+          ) {
+            console.error("Error closing Simulation MCP client:", err);
+          }
+        })
+      );
+    }
+    if (closePromises.length > 0) {
+      await Promise.allSettled(closePromises);
+    }
+  };
+
+  // Set up abort signal handler to cleanup MCP clients when request is aborted
+  req.signal.addEventListener("abort", () => {
+    console.log("🔌 Request aborted - cleaning up MCP clients");
+    cleanupMCPClients().catch(console.error);
+  });
+
   // Wrap entire handler in try-catch to prevent ECONNRESET from crashing the app
   try {
     console.log("\n" + "=".repeat(80));
@@ -107,12 +159,6 @@ export async function POST(req: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tools: Record<string, any> = {};
-    let arxivClient:
-      | Awaited<ReturnType<typeof experimental_createMCPClient>>
-      | undefined;
-    let simulationClient:
-      | Awaited<ReturnType<typeof experimental_createMCPClient>>
-      | undefined;
 
     console.log("\n" + "-".repeat(80));
     console.log("🔌 MCP SERVER INITIALIZATION");
@@ -658,66 +704,6 @@ export async function POST(req: Request) {
           console.log(`   Tool Calls: ${toolCalls?.length || 0}`);
           console.log(`   Tool Results: ${toolResults?.length || 0}`);
 
-          // Delay closing clients to ensure stream completes
-          // Use setTimeout to allow the response stream to finish
-          setTimeout(async () => {
-            try {
-              if (arxivClient) {
-                try {
-                  await arxivClient.close();
-                  console.log("🔌 ArXiv MCP client closed");
-                } catch (error) {
-                  // Ignore AbortError and ECONNRESET - they're harmless connection errors
-                  // that occur when the client closes before the server finishes sending
-                  const errorCode = (error as { code?: string })?.code;
-                  const errorName = error instanceof Error ? error.name : "";
-                  if (
-                    errorName === "AbortError" ||
-                    errorCode === "ECONNRESET" ||
-                    errorCode?.includes("ECONNRESET")
-                  ) {
-                    // Silently ignore - these are expected when client closes early
-                    return;
-                  }
-                  console.error("Error closing ArXiv MCP client:", error);
-                }
-              }
-              if (simulationClient) {
-                try {
-                  await simulationClient.close();
-                  console.log("🔌 Simulation MCP client closed");
-                } catch (error) {
-                  // Ignore AbortError and ECONNRESET - they're harmless connection errors
-                  // that occur when the client closes before the server finishes sending
-                  const errorCode = (error as { code?: string })?.code;
-                  const errorName = error instanceof Error ? error.name : "";
-                  if (
-                    errorName === "AbortError" ||
-                    errorCode === "ECONNRESET" ||
-                    errorCode?.includes("ECONNRESET")
-                  ) {
-                    // Silently ignore - these are expected when client closes early
-                    return;
-                  }
-                  console.error("Error closing Simulation MCP client:", error);
-                }
-              }
-            } catch (error) {
-              // Catch any unexpected errors in the setTimeout callback to prevent uncaught exceptions
-              const errorCode = (error as { code?: string })?.code;
-              const errorName = error instanceof Error ? error.name : "";
-              if (
-                errorName === "AbortError" ||
-                errorCode === "ECONNRESET" ||
-                errorCode?.includes("ECONNRESET")
-              ) {
-                // Silently ignore connection reset errors
-                return;
-              }
-              console.error("Error in onFinish cleanup:", error);
-            }
-          }, 5000); // Wait 5 seconds before closing to ensure stream completes
-
           console.log("\n" + "=".repeat(80));
           console.log("🏁 GENERATION COMPLETE");
           console.log("=".repeat(80));
@@ -790,79 +776,31 @@ export async function POST(req: Request) {
         }
       },
       onError: async (error) => {
-        try {
-          console.error("Stream error:", error);
-
-          // Close MCP clients on error (with delay)
-          setTimeout(async () => {
-            try {
-              if (arxivClient) {
-                try {
-                  await arxivClient.close();
-                } catch (closeError) {
-                  // Ignore AbortError and ECONNRESET - they're harmless connection errors
-                  const errorCode = (closeError as { code?: string })?.code;
-                  const errorName =
-                    closeError instanceof Error ? closeError.name : "";
-                  if (
-                    errorName === "AbortError" ||
-                    errorCode === "ECONNRESET" ||
-                    errorCode?.includes("ECONNRESET")
-                  ) {
-                    // Silently ignore - these are expected when client closes early
-                    return;
-                  }
-                  console.error("Error closing ArXiv MCP client:", closeError);
-                }
-              }
-              if (simulationClient) {
-                try {
-                  await simulationClient.close();
-                } catch (closeError) {
-                  // Ignore AbortError and ECONNRESET - they're harmless connection errors
-                  const errorCode = (closeError as { code?: string })?.code;
-                  const errorName =
-                    closeError instanceof Error ? closeError.name : "";
-                  if (
-                    errorName === "AbortError" ||
-                    errorCode === "ECONNRESET" ||
-                    errorCode?.includes("ECONNRESET")
-                  ) {
-                    // Silently ignore - these are expected when client closes early
-                    return;
-                  }
-                  console.error(
-                    "Error closing Simulation MCP client:",
-                    closeError
-                  );
-                }
-              }
-            } catch (cleanupError) {
-              // Catch any unexpected errors in the setTimeout callback to prevent uncaught exceptions
-              const errorCode = (cleanupError as { code?: string })?.code;
-              const errorName =
-                cleanupError instanceof Error ? cleanupError.name : "";
-              if (
-                errorName === "AbortError" ||
-                errorCode === "ECONNRESET" ||
-                errorCode?.includes("ECONNRESET")
-              ) {
-                // Silently ignore connection reset errors
-                return;
-              }
-              console.error("Error in onError cleanup:", cleanupError);
-            }
-          }, 1000);
-        } catch (err) {
-          console.error("Error in onError:", err);
-        }
+        console.error("❌ Stream error:", error);
+        // MCP clients will be cleaned up via abort signal handler
+        await cleanupMCPClients();
       },
     });
 
     // For DefaultChatTransport, return the UI message stream response
     // This includes tool calls and results in the message parts automatically
-    return result.toUIMessageStreamResponse();
+    const response = result.toUIMessageStreamResponse();
+
+    // Schedule cleanup after response is returned (let stream complete first)
+    // The abort signal handler will also cleanup if request is cancelled early
+    Promise.resolve().then(async () => {
+      // Wait for the stream to be consumed before cleaning up
+      // This prevents ECONNRESET errors from premature client closure
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await cleanupMCPClients();
+      console.log("✅ MCP clients cleaned up after stream completion");
+    });
+
+    return response;
   } catch (error) {
+    // Cleanup MCP clients on error
+    await cleanupMCPClients();
+
     // Catch any unhandled errors (including ECONNRESET) to prevent app crash
     const errorCode = (error as { code?: string })?.code;
     const errorName = error instanceof Error ? error.name : "";
