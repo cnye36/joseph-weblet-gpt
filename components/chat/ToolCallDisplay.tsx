@@ -16,6 +16,7 @@ interface ToolCallDisplayProps {
   args: Record<string, unknown>;
   result?: unknown;
   state: "call" | "result" | "partial-call";
+  onRerunSimulation?: (params: Record<string, number>) => Promise<void>;
 }
 
 interface SimulationResult {
@@ -194,7 +195,10 @@ export function ToolCallDisplay({
   args,
   result,
   state,
+  onRerunSimulation,
 }: ToolCallDisplayProps) {
+  // State to hold updated simulation result for in-place updates
+  const [updatedResult, setUpdatedResult] = useState<unknown>(result);
   const [showPayload, setShowPayload] = useState(false);
 
   // Check if result is a simulation
@@ -205,22 +209,279 @@ export function ToolCallDisplay({
     // Check for explicit simulation flag
     if (obj.isSimulation === true) return true;
 
-    // Check for simulation data structure
+    // Check for direct simulation data structure
     if (obj.data && Array.isArray(obj.data) && obj.data.length > 0) {
       return true;
+    }
+
+    // Check for MCP-wrapped simulation data (_meta.result.data)
+    if (obj._meta && typeof obj._meta === "object") {
+      const meta = obj._meta as Record<string, unknown>;
+      if (meta.result && typeof meta.result === "object") {
+        const result = meta.result as Record<string, unknown>;
+        if (
+          result.data &&
+          Array.isArray(result.data) &&
+          result.data.length > 0
+        ) {
+          return true;
+        }
+      }
     }
 
     return false;
   };
 
-  // Memoize simulation result to prevent creating new object references on every render
+  // Use updatedResult if available, otherwise use original result
+  const currentResult = updatedResult !== undefined ? updatedResult : result;
+
+  // Memoize simulation result with STABLE dependencies
+  // Use JSON.stringify of the result to create a stable dependency
+  const resultKey = useMemo(() => {
+    if (!currentResult) return null;
+    try {
+      return JSON.stringify(currentResult);
+    } catch {
+      return String(currentResult);
+    }
+  }, [currentResult]);
+
   const simulationResult = useMemo(() => {
-    return result && isSimulationResult(result) ? result : null;
-  }, [result]);
+    if (!resultKey) return null;
+
+    console.log("🔍 CLIENT: Checking if result is simulation");
+
+    if (!currentResult || !isSimulationResult(currentResult)) {
+      console.log("❌ CLIENT: Not a simulation result");
+      return null;
+    }
+
+    console.log("✅ CLIENT: Detected simulation result, unwrapping...");
+
+    const obj = currentResult as Record<string, unknown>;
+
+    // If data is wrapped in _meta.result, unwrap it
+    if (obj._meta && typeof obj._meta === "object") {
+      const meta = obj._meta as Record<string, unknown>;
+      if (meta.result && typeof meta.result === "object") {
+        const unwrapped = meta.result as Record<string, unknown>;
+
+        console.log("📦 CLIENT: Unwrapped data structure", {
+          hasData: !!unwrapped.data,
+          dataLength: Array.isArray(unwrapped.data) ? unwrapped.data.length : 0,
+        });
+
+        // Extract parameters from original args
+        const spec = args?.spec as Record<string, unknown> | undefined;
+        const originalParams =
+          (spec?.parameters as Record<string, number> | undefined) || {};
+        const originalInitialConditions =
+          (spec?.initial_conditions as Record<string, number> | undefined) ||
+          {};
+
+        // Build parameters object from original args
+        const extractedParameters: Record<
+          string,
+          {
+            value: number;
+            min: number;
+            max: number;
+            step?: number;
+            unit?: string;
+            label?: string;
+          }
+        > = {};
+
+        // Extract beta and gamma from parameters
+        if (typeof originalParams.beta === "number") {
+          extractedParameters.beta = {
+            value: originalParams.beta,
+            min: 0.1,
+            max: 0.5,
+            step: 0.01,
+            unit: "",
+            label: "Infection Rate (β)",
+          };
+        }
+        if (typeof originalParams.gamma === "number") {
+          extractedParameters.gamma = {
+            value: originalParams.gamma,
+            min: 0.05,
+            max: 0.2,
+            step: 0.01,
+            unit: "",
+            label: "Recovery Rate (γ)",
+          };
+        }
+
+        // Extract initial conditions (S, I, R)
+        if (typeof originalInitialConditions.S === "number") {
+          extractedParameters.S = {
+            value: originalInitialConditions.S,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            unit: "",
+            label: "Susceptible (S)",
+          };
+        }
+        if (typeof originalInitialConditions.I === "number") {
+          extractedParameters.I = {
+            value: originalInitialConditions.I,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            unit: "",
+            label: "Infected (I)",
+          };
+        }
+        if (typeof originalInitialConditions.R === "number") {
+          extractedParameters.R = {
+            value: originalInitialConditions.R,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            unit: "",
+            label: "Recovered (R)",
+          };
+        }
+
+        // Transform to expected format with interactive parameters
+        const transformed = {
+          data: unwrapped.data as Array<Record<string, number | string>>,
+          parameters:
+            Object.keys(extractedParameters).length > 0
+              ? extractedParameters
+              : {
+                  beta: {
+                    value: 0.3,
+                    min: 0.1,
+                    max: 0.5,
+                    step: 0.01,
+                    unit: "",
+                    label: "Infection Rate (β)",
+                  },
+                  gamma: {
+                    value: 0.1,
+                    min: 0.05,
+                    max: 0.2,
+                    step: 0.01,
+                    unit: "",
+                    label: "Recovery Rate (γ)",
+                  },
+                },
+          labels: {
+            x: "Time (days)",
+            y: "Population Fraction",
+            title: "SIR Model Simulation",
+          },
+          chartType: "line" as const,
+          description: "Epidemiology SIR model simulation",
+          isSimulation: true,
+        } as SimulationResult;
+
+        console.log("✅ CLIENT: Created simulation result for rendering");
+
+        return transformed;
+      }
+    }
+
+    console.log(
+      "⚠️ CLIENT: Result already in expected format (no _meta wrapper)"
+    );
+
+    // Extract parameters from original args even if result is already formatted
+    const spec = args?.spec as Record<string, unknown> | undefined;
+    const originalParams =
+      (spec?.parameters as Record<string, number> | undefined) || {};
+    const originalInitialConditions =
+      (spec?.initial_conditions as Record<string, number> | undefined) || {};
+
+    // Build parameters object from original args
+    const extractedParameters: Record<
+      string,
+      {
+        value: number;
+        min: number;
+        max: number;
+        step?: number;
+        unit?: string;
+        label?: string;
+      }
+    > = {};
+
+    // Extract beta and gamma from parameters
+    if (typeof originalParams.beta === "number") {
+      extractedParameters.beta = {
+        value: originalParams.beta,
+        min: 0.1,
+        max: 0.5,
+        step: 0.01,
+        unit: "",
+        label: "Infection Rate (β)",
+      };
+    }
+    if (typeof originalParams.gamma === "number") {
+      extractedParameters.gamma = {
+        value: originalParams.gamma,
+        min: 0.05,
+        max: 0.2,
+        step: 0.01,
+        unit: "",
+        label: "Recovery Rate (γ)",
+      };
+    }
+
+    // Extract initial conditions (S, I, R)
+    if (typeof originalInitialConditions.S === "number") {
+      extractedParameters.S = {
+        value: originalInitialConditions.S,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        unit: "",
+        label: "Susceptible (S)",
+      };
+    }
+    if (typeof originalInitialConditions.I === "number") {
+      extractedParameters.I = {
+        value: originalInitialConditions.I,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        unit: "",
+        label: "Infected (I)",
+      };
+    }
+    if (typeof originalInitialConditions.R === "number") {
+      extractedParameters.R = {
+        value: originalInitialConditions.R,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        unit: "",
+        label: "Recovered (R)",
+      };
+    }
+
+    // Merge extracted parameters with existing result
+    const resultWithParams = currentResult as SimulationResult;
+    if (
+      Object.keys(extractedParameters).length > 0 &&
+      !resultWithParams.parameters
+    ) {
+      resultWithParams.parameters = extractedParameters;
+    }
+
+    return resultWithParams;
+  }, [resultKey, currentResult, args]);
 
   const isArxivTool = toolName.toLowerCase().includes("arxiv");
 
-  const parsedResult = useMemo(() => parseArxivResult(result), [result]);
+  const parsedResult = useMemo(
+    () => parseArxivResult(currentResult),
+    [currentResult]
+  );
   const arxivPapers = useMemo(
     () => (isArxivTool ? extractArxivPapers(parsedResult) : []),
     [parsedResult, isArxivTool]
@@ -232,7 +493,8 @@ export function ToolCallDisplay({
       return {
         name: "ArXiv",
         icon: BookOpen,
-        color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+        color:
+          "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
       };
     }
     // Check for simulation-related tool names
@@ -245,14 +507,16 @@ export function ToolCallDisplay({
       return {
         name: "Simulation",
         icon: FlaskConical,
-        color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700",
+        color:
+          "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700",
       };
     }
     // Default
     return {
       name: "Tool",
       icon: FlaskConical,
-      color: "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700",
+      color:
+        "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700",
     };
   };
 
@@ -305,21 +569,22 @@ export function ToolCallDisplay({
     </div>
   );
 
-const renderGenericProcessing = () => (
-  <div className="px-3 pb-3">
-    <div className="flex items-start gap-3 rounded-md border border-dashed border-current/40 bg-black/[0.02] px-3 py-2 text-foreground dark:bg-white/5">
-      <Loader2 className="size-4 shrink-0 animate-spin" />
-      <div className="space-y-1 text-sm">
-        <p className="font-semibold">
-          Running {serverInfo.name} tool call...
-        </p>
-        <p className="text-xs opacity-80">
-          We’ll display the exact request and JSON response as soon as it lands.
-        </p>
+  const renderGenericProcessing = () => (
+    <div className="px-3 pb-3">
+      <div className="flex items-start gap-3 rounded-md border border-dashed border-current/40 bg-black/[0.02] px-3 py-2 text-foreground dark:bg-white/5">
+        <Loader2 className="size-4 shrink-0 animate-spin" />
+        <div className="space-y-1 text-sm">
+          <p className="font-semibold">
+            Running {serverInfo.name} tool call...
+          </p>
+          <p className="text-xs opacity-80">
+            We’ll display the exact request and JSON response as soon as it
+            lands.
+          </p>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
   const renderArxivPapers = () => {
     if (!isArxivTool || arxivPapers.length === 0) return null;
@@ -409,7 +674,9 @@ const renderGenericProcessing = () => (
   };
 
   return (
-    <div className={`rounded-lg border ${serverInfo.color} my-2 overflow-hidden`}>
+    <div
+      className={`rounded-lg border ${serverInfo.color} my-2 overflow-hidden`}
+    >
       <div className="flex items-center gap-2 px-3 py-2">
         <Icon className="size-4 shrink-0" />
         <div className="flex flex-col">
@@ -423,15 +690,48 @@ const renderGenericProcessing = () => (
       {state === "partial-call" &&
         (isArxivTool ? renderArxivProcessing() : renderGenericProcessing())}
 
-      {/* Render simulation visualization if result is a simulation */}
-      {simulationResult && (
-        <div className="px-3 pb-3">
-          <SimulationRenderer
-            key={`sim-${toolCallId}-${simulationResult.data?.length || 0}`}
-            initialData={simulationResult}
-          />
-        </div>
-      )}
+      {/* Render simulation visualization ONLY when result is complete (not during partial-call) */}
+      {state === "result" &&
+        simulationResult &&
+        (() => {
+          console.log("🎨 CLIENT: Rendering SimulationRenderer with data", {
+            toolCallId,
+            dataPoints: simulationResult.data?.length,
+            hasParameters: !!simulationResult.parameters,
+            parameterCount: simulationResult.parameters
+              ? Object.keys(simulationResult.parameters).length
+              : 0,
+          });
+
+          // Create update callback to update simulation in place
+          const handleUpdate = (newData: SimulationResult) => {
+            // Update the local state with the new simulation data
+            // This will cause the component to re-render with updated data
+            setUpdatedResult(newData);
+          };
+
+          // Create rerun callback that sends a message to the LLM (fallback)
+          const handleRerun = async (params: Record<string, number>) => {
+            if (!onRerunSimulation) {
+              console.warn("No rerun callback provided");
+              return;
+            }
+
+            await onRerunSimulation(params);
+          };
+
+          return (
+            <div className="w-full pb-3">
+              <SimulationRenderer
+                key={`tool-sim-${toolCallId}`}
+                initialData={simulationResult}
+                onRerun={handleRerun}
+                onUpdate={handleUpdate}
+                originalArgs={args}
+              />
+            </div>
+          );
+        })()}
 
       {renderArxivPapers()}
 

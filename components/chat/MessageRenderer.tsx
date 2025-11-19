@@ -117,8 +117,9 @@ export default function MessageRenderer({
               }
             }
 
-            // Check if it's simulation data for interactive rendering
-            if (language === "simulation-data") {
+            // Simulation data is now handled via tool calls, not markdown
+            // Keeping this block for backwards compatibility but it should not be used
+            if (language === "simulation-data-legacy") {
               // Validate we have actual content
               if (
                 !codeContent ||
@@ -254,11 +255,9 @@ export default function MessageRenderer({
                   keys: Object.keys(simulationData)
                 });
 
-                // Use a stable key based on data length to prevent re-renders during streaming
-                // This ensures SimulationRenderer only mounts once with complete data
-                const stableKey = `sim-${simulationData.data.length}`;
-
-                return <SimulationRenderer key={stableKey} initialData={simulationData} />;
+                // Use a fixed key since there's only one simulation per code block
+                // Don't use data.length as it changes during streaming, causing remounts
+                return <SimulationRenderer key="simulation" initialData={simulationData} />;
               } catch (error) {
                 // Only show error UI if content looks complete (has closing brace at end)
                 const looksComplete = hasClosingBrace;

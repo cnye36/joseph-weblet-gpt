@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo, useMemo } from "react";
+import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
 import {
   LineChart,
   Line,
@@ -23,14 +23,17 @@ import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 interface SimulationData {
   type?: string;
   data?: Array<Record<string, number | string>>;
-  parameters?: Record<string, {
-    value: number;
-    min: number;
-    max: number;
-    step?: number;
-    unit?: string;
-    label?: string;
-  }>;
+  parameters?: Record<
+    string,
+    {
+      value: number;
+      min: number;
+      max: number;
+      step?: number;
+      unit?: string;
+      label?: string;
+    }
+  >;
   labels?: {
     x?: string;
     y?: string;
@@ -42,52 +45,58 @@ interface SimulationData {
 
 interface SimulationRendererProps {
   initialData: SimulationData;
-  onRerun?: (params: Record<string, number>) => Promise<SimulationData>;
+  onRerun?: (params: Record<string, number>) => Promise<void>;
+  onUpdate?: (newData: SimulationData) => void;
+  originalArgs?: Record<string, unknown>;
 }
 
 const SimulationRendererComponent = ({
   initialData,
   onRerun,
+  onUpdate,
+  originalArgs,
 }: SimulationRendererProps) => {
   const [data, setData] = useState<SimulationData>(initialData);
-  const [parameters, setParameters] = useState<Record<string, number>>(() => {
+
+  // Extract initial parameters ONCE on mount - use a ref to ensure it's truly stable
+  const initialParametersRef = useRef<Record<string, number>>({});
+  if (
+    Object.keys(initialParametersRef.current).length === 0 &&
+    initialData.parameters
+  ) {
     const params: Record<string, number> = {};
-    if (initialData.parameters) {
-      Object.entries(initialData.parameters).forEach(([key, config]) => {
-        params[key] = config.value;
-      });
-    }
-    return params;
-  });
+    Object.entries(initialData.parameters).forEach(([key, config]) => {
+      params[key] = config.value;
+    });
+    initialParametersRef.current = params;
+  }
+  const initialParameters = initialParametersRef.current;
+
+  const [parameters, setParameters] =
+    useState<Record<string, number>>(initialParameters);
   const [isRunning, setIsRunning] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Memoize initial parameter values to prevent unnecessary re-calculations
-  const initialParameters = useMemo(() => {
-    const params: Record<string, number> = {};
-    if (initialData.parameters) {
-      Object.entries(initialData.parameters).forEach(([key, config]) => {
-        params[key] = config.value;
-      });
-    }
-    return params;
-  }, [initialData.parameters]);
-
   // Check if parameters have changed from initial values
-  useEffect(() => {
+  // Use useMemo to compute hasChanges without causing re-renders
+  const hasChangesComputed = useMemo(() => {
     if (Object.keys(initialParameters).length === 0) {
-      setHasChanges(false);
-      return;
+      return false;
     }
 
-    const changed = Object.entries(parameters).some(([key, value]) => {
+    return Object.entries(parameters).some(([key, value]) => {
       const initialValue = initialParameters[key];
-      return initialValue !== undefined && Math.abs(value - initialValue) > 0.001;
+      return (
+        initialValue !== undefined && Math.abs(value - initialValue) > 0.001
+      );
     });
-
-    setHasChanges(changed);
   }, [parameters, initialParameters]);
+
+  // Only update state if the computed value actually changed
+  useEffect(() => {
+    setHasChanges(hasChangesComputed);
+  }, [hasChangesComputed]);
 
   const handleParameterChange = useCallback((key: string, value: number[]) => {
     setParameters((prev) => ({
@@ -99,48 +108,59 @@ const SimulationRendererComponent = ({
   const handleRerun = useCallback(async () => {
     setIsRunning(true);
     try {
-      // If onRerun prop is provided, use it
-      if (onRerun) {
-        const newData = await onRerun(parameters);
+      // If onUpdate is provided, call the API directly and update in place
+      if (onUpdate) {
+        const response = await fetch("/api/simulation/rerun", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            parameters,
+            originalArgs,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to rerun simulation");
+        }
+
+        const result = await response.json();
+
+        // Transform the result to match SimulationData format
+        const newData: SimulationData = {
+          ...data,
+          data: result.data || data.data,
+        };
+
         setData(newData);
+        onUpdate(newData);
+
+        // CRITICAL FIX: Update initialParametersRef to current parameters after rerun
+        // This ensures subsequent parameter changes are compared against the rerun parameters
+        // allowing the rerun button to appear again when parameters change
+        initialParametersRef.current = { ...parameters };
+
         setHasChanges(false);
-        return;
+      } else if (onRerun) {
+        // Fallback: use the old method (sends message to LLM)
+        await onRerun(parameters);
+        // Update initialParametersRef even for fallback method
+        initialParametersRef.current = { ...parameters };
+        setHasChanges(false);
+      } else {
+        console.warn("No rerun callback provided");
       }
-
-      // Otherwise, call our API proxy endpoint (avoids CORS issues)
-      const response = await fetch('/api/simulation/rerun', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          parameters: {
-            ...parameters,
-            steps: data.data?.length || 100
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to run simulation');
-      }
-
-      const result = await response.json();
-
-      // Update with new simulation data
-      setData(prev => ({
-        ...prev,
-        data: result.data
-      }));
-      setHasChanges(false);
     } catch (error) {
       console.error("Failed to rerun simulation:", error);
-      alert(`Simulation failed: ${error instanceof Error ? error.message : String(error)}`);
+      alert(
+        `Simulation failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     } finally {
       setIsRunning(false);
     }
-  }, [onRerun, parameters, data.data]);
+  }, [onRerun, onUpdate, parameters, originalArgs, data]);
 
   const renderChart = () => {
     if (!data.data || data.data.length === 0) {
@@ -152,8 +172,15 @@ const SimulationRendererComponent = ({
     }
 
     const chartType = data.chartType || "line";
-    const dataKeys = Object.keys(data.data[0]).filter((key) => key !== "x" && key !== "time" && key !== "t");
-    const xKey = data.data[0].x !== undefined ? "x" : data.data[0].time !== undefined ? "time" : "t";
+    const dataKeys = Object.keys(data.data[0]).filter(
+      (key) => key !== "x" && key !== "time" && key !== "t"
+    );
+    const xKey =
+      data.data[0].x !== undefined
+        ? "x"
+        : data.data[0].time !== undefined
+        ? "time"
+        : "t";
 
     const colors = [
       "#3b82f6", // blue
@@ -167,7 +194,7 @@ const SimulationRendererComponent = ({
 
     const commonProps = {
       data: data.data,
-      margin: { top: 10, right: 30, left: 0, bottom: 0 },
+      margin: { top: 10, right: 30, left: 20, bottom: 20 },
     };
 
     const commonAxisProps = {
@@ -177,7 +204,7 @@ const SimulationRendererComponent = ({
 
     if (chartType === "scatter") {
       return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={500}>
           <ScatterChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
             <XAxis
@@ -220,7 +247,7 @@ const SimulationRendererComponent = ({
 
     if (chartType === "area") {
       return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={500}>
           <AreaChart {...commonProps}>
             <defs>
               {dataKeys.map((key, index) => (
@@ -288,7 +315,7 @@ const SimulationRendererComponent = ({
 
     // Default: Line chart
     return (
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={500}>
         <LineChart {...commonProps}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
           <XAxis
@@ -333,7 +360,7 @@ const SimulationRendererComponent = ({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card my-4 -mx-3 sm:mx-0 sm:max-w-full w-[calc(100%+1.5rem)] sm:w-full">
+    <div className="border rounded-lg overflow-hidden bg-card my-4 w-full max-w-none">
       {/* Header */}
       <div className="bg-purple-100 dark:bg-purple-900/30 border-b border-purple-300 dark:border-purple-700 px-4 py-3">
         <h3 className="font-semibold text-purple-900 dark:text-purple-100">
@@ -347,8 +374,10 @@ const SimulationRendererComponent = ({
       </div>
 
       {/* Chart Area */}
-      <div className="p-4 bg-background">
-        {renderChart()}
+      <div className="p-6 bg-background w-full">
+        <div className="w-full" style={{ minHeight: "500px", width: "100%" }}>
+          {renderChart()}
+        </div>
       </div>
 
       {/* Controls Section */}
@@ -379,7 +408,10 @@ const SimulationRendererComponent = ({
                 {Object.entries(data.parameters).map(([key, config]) => (
                   <div key={key} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor={`param-${key}`} className="text-sm font-medium">
+                      <Label
+                        htmlFor={`param-${key}`}
+                        className="text-sm font-medium"
+                      >
                         {config.label || key}
                       </Label>
                       <span className="text-sm font-mono text-muted-foreground">
@@ -393,12 +425,20 @@ const SimulationRendererComponent = ({
                       max={config.max}
                       step={config.step || 0.01}
                       value={[parameters[key]]}
-                      onValueChange={(value) => handleParameterChange(key, value)}
+                      onValueChange={(value) =>
+                        handleParameterChange(key, value)
+                      }
                       className="cursor-pointer"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{config.min}{config.unit && ` ${config.unit}`}</span>
-                      <span>{config.max}{config.unit && ` ${config.unit}`}</span>
+                      <span>
+                        {config.min}
+                        {config.unit && ` ${config.unit}`}
+                      </span>
+                      <span>
+                        {config.max}
+                        {config.unit && ` ${config.unit}`}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -419,7 +459,9 @@ const SimulationRendererComponent = ({
                   ) : (
                     <>
                       <RefreshCw className="size-4 mr-2" />
-                      {hasChanges ? "Run Simulation with New Parameters" : "No Changes to Apply"}
+                      {hasChanges
+                        ? "Run Simulation with New Parameters"
+                        : "No Changes to Apply"}
                     </>
                   )}
                 </Button>
@@ -433,15 +475,8 @@ const SimulationRendererComponent = ({
 };
 
 // Memoize the component to prevent unnecessary re-renders during streaming
-// Only re-render if initialData reference or onRerun callback changes
-export const SimulationRenderer = memo(SimulationRendererComponent, (prevProps, nextProps) => {
-  // Return true to SKIP re-render, false to allow re-render
-  // With stable keys from parent, we can do simple reference comparison
-  return (
-    prevProps.initialData === nextProps.initialData &&
-    prevProps.onRerun === nextProps.onRerun
-  );
-});
+// Use default shallow comparison instead of custom comparison
+export const SimulationRenderer = memo(SimulationRendererComponent);
 
 
 

@@ -62,12 +62,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         const userIsAdmin = isAdminEmail(user.email) || Boolean(adminData);
 
-        console.log("Admin status check:", {
-          email: user.email,
-          isAdminFromEnv: isAdminEmail(user.email),
-          isAdminFromDB: Boolean(adminData),
-          isAdmin: userIsAdmin,
-        });
 
         if (userIsAdmin) {
           // Admins have full access, no subscription required

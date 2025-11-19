@@ -57,6 +57,7 @@ export default function Chat({
       [botId]
     ),
     onFinish: async ({ message }) => {
+      console.log("🎯 CHAT COMPONENT: onFinish called", { message });
       const finishedChatId = chatIdRef.current;
       if (finishedChatId) {
         const msg = message as unknown as {
@@ -98,6 +99,46 @@ export default function Chat({
     },
   });
 
+  // Debug: Log status changes
+  useEffect(() => {
+    console.log("🔄 CHAT STATUS CHANGED:", status);
+  }, [status]);
+
+  // Create rerun callback for simulations
+  const handleRerunSimulation = useMemo(
+    () => async (params: Record<string, number>) => {
+      // Build a natural language message asking the LLM to rerun with new parameters
+      const paramDescriptions: string[] = [];
+
+      // Map parameter names to descriptions
+      const paramLabels: Record<string, string> = {
+        beta: "infection rate (β)",
+        gamma: "recovery rate (γ)",
+        S: "susceptible population",
+        I: "infected population",
+        R: "recovered population",
+      };
+
+      Object.entries(params).forEach(([key, value]) => {
+        const label = paramLabels[key] || key;
+        paramDescriptions.push(`${label} = ${value.toFixed(3)}`);
+      });
+
+      const message = `Please rerun the SIR model simulation with the following updated parameters: ${paramDescriptions.join(
+        ", "
+      )}.`;
+
+      // Send the message to the LLM
+      const messageParts = [{ type: "text" as const, text: message }];
+      await (
+        sendMessage as unknown as (arg: {
+          content: typeof messageParts;
+        }) => Promise<void>
+      )({ content: messageParts });
+    },
+    [sendMessage]
+  );
+
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<
     {
@@ -131,162 +172,428 @@ export default function Chat({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-5xl mx-auto space-y-3 pb-4">
-          {messages.map((m: UIMessage) => (
-            <div
-              key={m.id}
-              className={`flex ${
-                m.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+        <div className="max-w-7xl mx-auto space-y-3 pb-4">
+          {messages.map((m: UIMessage) => {
+            // Check if this message contains a simulation - if so, we'll render it full width
+            const msg = m as unknown as { parts?: unknown; content?: unknown };
+            const parts = Array.isArray(msg.parts)
+              ? msg.parts
+              : Array.isArray(msg.content)
+              ? msg.content
+              : typeof msg.content === "string"
+              ? [{ type: "text", text: msg.content }]
+              : [];
+
+            const hasSimulation = (parts as unknown[]).some((p: unknown) => {
+              const part = p as { type?: string; toolName?: string };
+              return (
+                part.type?.startsWith("tool-") &&
+                (part.toolName === "simulate_model" ||
+                  part.type.includes("simulate"))
+              );
+            });
+
+            return (
               <div
-                className={`space-y-1 rounded-lg px-3 py-2 max-w-[80%] ${
-                  m.role === "user" ? "bg-blue-600 text-white" : "bg-muted"
-                }`}
+                key={m.id}
+                className={`flex ${
+                  m.role === "user" ? "justify-end" : "justify-start"
+                } ${hasSimulation ? "w-full" : ""}`}
               >
-                <div className="text-xs opacity-70">{m.role}</div>
-                <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
-                  {(() => {
-                    const msg = m as unknown as {
-                      parts?: unknown;
-                      content?: unknown;
-                    };
-                    const parts = Array.isArray(msg.parts)
-                      ? msg.parts
-                      : Array.isArray(msg.content)
-                      ? msg.content
-                      : typeof msg.content === "string"
-                      ? [{ type: "text", text: msg.content }]
-                      : [];
-                    return (parts as unknown[]).map((p, idx: number) => {
-                      type UIInlinePart =
-                        | { type: "text"; text: string }
-                        | { type: "image"; image: string }
-                        | {
-                            type: "file";
-                            file: { name: string; type: string; size: number };
+                <div
+                  className={`space-y-1 rounded-lg ${
+                    m.role === "user"
+                      ? "bg-blue-600 text-white max-w-[80%] px-3 py-2"
+                      : hasSimulation
+                      ? "bg-muted w-full max-w-none px-0 py-2"
+                      : "bg-muted max-w-[80%] px-3 py-2"
+                  }`}
+                >
+                  <div className="text-xs opacity-70">{m.role}</div>
+                  <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
+                    {(() => {
+                      const msg = m as unknown as {
+                        parts?: unknown;
+                        content?: unknown;
+                      };
+                      const parts = Array.isArray(msg.parts)
+                        ? msg.parts
+                        : Array.isArray(msg.content)
+                        ? msg.content
+                        : typeof msg.content === "string"
+                        ? [{ type: "text", text: msg.content }]
+                        : [];
+
+                      // Debug: Log all parts for assistant messages
+                      if (m.role === "assistant") {
+                        console.log("🔍 CHAT: Assistant message structure", {
+                          messageId: m.id,
+                          hasParts: Array.isArray(msg.parts),
+                          hasContent: !!msg.content,
+                          partsCount: parts.length,
+                          rawMessage: {
+                            parts: msg.parts,
+                            content:
+                              typeof msg.content === "string"
+                                ? msg.content.substring(0, 100)
+                                : msg.content,
+                          },
+                          parts: parts.map((p: unknown) => {
+                            const part = p as {
+                              type?: string;
+                              toolName?: string;
+                              toolCallId?: string;
+                              result?: unknown;
+                            };
+                            return {
+                              type: part.type,
+                              toolName: part.toolName,
+                              toolCallId: part.toolCallId,
+                              hasResult: !!part.result,
+                            };
+                          }),
+                        });
+                      }
+
+                      // FIRST PASS: Collect tool call data to make rendering decisions
+                      // Handle both old format (tool-call) and new format (tool-{toolName})
+                      const toolCallsMap = new Map<
+                        string,
+                        Record<string, unknown>
+                      >();
+                      // Track which toolCallIds have results (to prevent double rendering)
+                      const toolResultsSet = new Set<string>();
+                      // Track which tool names have successful results (to skip invalid retries)
+                      const successfulToolNames = new Set<string>();
+                      // Track invalid toolCallIds that should be skipped
+                      const invalidToolCallIds = new Set<string>();
+                      // Map tool names to successful toolCallIds
+                      const toolNameToSuccessfulCallId = new Map<
+                        string,
+                        string
+                      >();
+
+                      (parts as unknown[]).forEach((p) => {
+                        const part = p as {
+                          type?: string;
+                          toolCallId?: string;
+                          toolName?: string;
+                          args?: Record<string, unknown>;
+                          input?: Record<string, unknown>;
+                          state?: string;
+                          result?: unknown;
+                          output?: unknown;
+                          invalid?: boolean;
+                          error?: unknown;
+                        };
+                        // Old format: tool-call
+                        if (
+                          part.type === "tool-call" &&
+                          part.toolCallId &&
+                          part.args
+                        ) {
+                          toolCallsMap.set(part.toolCallId, part.args);
+                        }
+                        // New format: tool-{toolName} with input
+                        if (part.type?.startsWith("tool-") && part.toolCallId) {
+                          const args = part.input || part.args;
+                          if (args) {
+                            toolCallsMap.set(part.toolCallId, args);
                           }
-                        | {
-                            type: "tool-call";
-                            toolCallId: string;
-                            toolName: string;
-                            args: Record<string, unknown>;
+                          // Extract tool name
+                          const toolName =
+                            part.toolName ||
+                            (part.type?.startsWith("tool-")
+                              ? part.type.replace("tool-", "")
+                              : "unknown");
+
+                          // Track invalid tool calls without results
+                          if (
+                            (part.invalid === true || part.error) &&
+                            part.output === undefined &&
+                            part.result === undefined
+                          ) {
+                            invalidToolCallIds.add(part.toolCallId);
                           }
-                        | {
+
+                          // If this part has a result, mark it
+                          if (
+                            part.output !== undefined ||
+                            part.result !== undefined
+                          ) {
+                            toolResultsSet.add(part.toolCallId);
+                            // Mark this tool name as having a successful result
+                            // (if it's not invalid or errored)
+                            if (!part.invalid && !part.error) {
+                              successfulToolNames.add(toolName);
+                              toolNameToSuccessfulCallId.set(
+                                toolName,
+                                part.toolCallId
+                              );
+                            }
+                          }
+                        }
+                        // Legacy format: tool-result
+                        if (part.type === "tool-result" && part.toolCallId) {
+                          toolResultsSet.add(part.toolCallId);
+                          const toolName = (part as { toolName?: string })
+                            .toolName;
+                          if (toolName) {
+                            successfulToolNames.add(toolName);
+                            toolNameToSuccessfulCallId.set(
+                              toolName,
+                              part.toolCallId
+                            );
+                          }
+                        }
+                      });
+
+                      return (parts as unknown[]).map((p, idx: number) => {
+                        type UIInlinePart =
+                          | { type: "text"; text: string }
+                          | { type: "image"; image: string }
+                          | {
+                              type: "file";
+                              file: {
+                                name: string;
+                                type: string;
+                                size: number;
+                              };
+                            }
+                          | {
+                              type: "tool-call";
+                              toolCallId: string;
+                              toolName: string;
+                              args: Record<string, unknown>;
+                            }
+                          | {
+                              type: "tool-result";
+                              toolCallId: string;
+                              toolName: string;
+                              result: unknown;
+                              args?: Record<string, unknown>;
+                            }
+                          | { type: string };
+                        const part = p as unknown as UIInlinePart;
+                        if (part.type === "text") {
+                          return (
+                            <MessageRenderer
+                              key={idx}
+                              content={
+                                (part as { type: "text"; text: string }).text
+                              }
+                            />
+                          );
+                        }
+                        if (part.type === "image") {
+                          const url = (part as { type: "image"; image: string })
+                            .image;
+                          return (
+                            <div key={idx} className="mt-2">
+                              <Image
+                                src={url}
+                                alt="attachment"
+                                width={512}
+                                height={512}
+                                className="rounded-md border h-auto w-full max-h-96 object-contain"
+                                unoptimized
+                              />
+                            </div>
+                          );
+                        }
+                        if (part.type === "file") {
+                          const file = (
+                            part as {
+                              type: "file";
+                              file: {
+                                name: string;
+                                type: string;
+                                size: number;
+                              };
+                            }
+                          ).file;
+                          return (
+                            <div
+                              key={idx}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted rounded-md border text-sm"
+                            >
+                              <svg
+                                className="w-4 h-4 text-muted-foreground"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                />
+                              </svg>
+                              <span
+                                className="font-medium truncate max-w-xs text-foreground"
+                                title={file.name}
+                              >
+                                {file.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                ({Math.ceil(file.size / 1024)} KB)
+                              </span>
+                            </div>
+                          );
+                        }
+                        // Handle tool parts - both old format (tool-call/tool-result) and new format (tool-{toolName})
+                        if (
+                          part.type === "tool-call" ||
+                          part.type?.startsWith("tool-")
+                        ) {
+                          const toolPart = part as {
+                            type: string;
+                            toolCallId?: string;
+                            toolName?: string;
+                            args?: Record<string, unknown>;
+                            input?: Record<string, unknown>;
+                            result?: unknown;
+                            output?: unknown;
+                            state?: string;
+                            invalid?: boolean;
+                            error?: unknown;
+                          };
+
+                          // Extract tool name from type (tool-{toolName}) or use toolName property
+                          const toolName =
+                            toolPart.toolName ||
+                            (toolPart.type?.startsWith("tool-")
+                              ? toolPart.type.replace("tool-", "")
+                              : "unknown");
+
+                          const toolCallId = toolPart.toolCallId;
+                          if (!toolCallId) return null;
+
+                          // Get result from output or result property
+                          const result = toolPart.output || toolPart.result;
+
+                          // CRITICAL FIX #1: Skip rendering tool-call if there's already a tool-result for this toolCallId
+                          // This prevents double rendering (one loading, one with results)
+                          if (
+                            (part.type === "tool-call" ||
+                              (part.type?.startsWith("tool-") &&
+                                result === undefined)) &&
+                            toolResultsSet.has(toolCallId)
+                          ) {
+                            // Don't render the initial tool-call if result already exists
+                            return null;
+                          }
+
+                          // CRITICAL FIX #2: Skip invalid tool calls that were marked in first pass
+                          // This prevents showing invalid retries when the AI SDK retries with correct parameters
+                          if (invalidToolCallIds.has(toolCallId)) {
+                            // Check if there's a successful call for this tool name
+                            if (successfulToolNames.has(toolName)) {
+                              // Skip invalid tool calls that were retried successfully
+                              return null;
+                            }
+                          }
+
+                          // CRITICAL FIX #3: Skip invalid tool calls without results if there's already a successful call for this tool
+                          // This catches cases not caught in first pass
+                          if (
+                            (toolPart.invalid === true || toolPart.error) &&
+                            result === undefined &&
+                            successfulToolNames.has(toolName)
+                          ) {
+                            // Skip invalid tool calls that were retried successfully
+                            return null;
+                          }
+
+                          // Get args from input, args, or toolCallsMap
+                          const args =
+                            toolPart.input ||
+                            toolPart.args ||
+                            toolCallsMap.get(toolCallId) ||
+                            {};
+
+                          // Determine state based on format
+                          let state: "partial-call" | "result" | "call" =
+                            "partial-call";
+                          if (
+                            toolPart.state === "out" ||
+                            result !== undefined
+                          ) {
+                            state = "result";
+                          } else if (part.type === "tool-call") {
+                            state = "partial-call";
+                          }
+
+                          // Debug: Log simulation tool parts with full details
+                          if (toolName === "simulate_model") {
+                            console.log(
+                              "🔍 CHAT: Processing simulation tool part",
+                              {
+                                type: toolPart.type,
+                                toolName,
+                                toolCallId,
+                                state: toolPart.state,
+                                hasResult: !!result,
+                                hasArgs: !!args && Object.keys(args).length > 0,
+                                allKeys: Object.keys(toolPart),
+                                fullPart: toolPart,
+                                willRender: !(
+                                  (part.type === "tool-call" ||
+                                    (part.type?.startsWith("tool-") &&
+                                      result === undefined)) &&
+                                  toolResultsSet.has(toolCallId)
+                                ),
+                              }
+                            );
+                          }
+
+                          return (
+                            <ToolCallDisplay
+                              key={`${toolCallId}-${state}`}
+                              toolName={toolName}
+                              toolCallId={toolCallId}
+                              args={args}
+                              result={result}
+                              state={state}
+                              onRerunSimulation={handleRerunSimulation}
+                            />
+                          );
+                        }
+                        if (part.type === "tool-result") {
+                          // Legacy format support
+                          const toolResult = part as {
                             type: "tool-result";
                             toolCallId: string;
                             toolName: string;
                             result: unknown;
                             args?: Record<string, unknown>;
-                          }
-                        | { type: string };
-                      const part = p as unknown as UIInlinePart;
-                      if (part.type === "text") {
-                        return (
-                          <MessageRenderer
-                            key={idx}
-                            content={
-                              (part as { type: "text"; text: string }).text
-                            }
-                          />
-                        );
-                      }
-                      if (part.type === "image") {
-                        const url = (part as { type: "image"; image: string })
-                          .image;
-                        return (
-                          <div key={idx} className="mt-2">
-                            <Image
-                              src={url}
-                              alt="attachment"
-                              width={512}
-                              height={512}
-                              className="rounded-md border h-auto w-full max-h-96 object-contain"
-                              unoptimized
+                          };
+                          // Get args from tool call if not in tool result
+                          const args =
+                            toolResult.args ||
+                            toolCallsMap.get(toolResult.toolCallId) ||
+                            {};
+                          return (
+                            <ToolCallDisplay
+                              key={`${toolResult.toolCallId}-result`}
+                              toolName={toolResult.toolName}
+                              toolCallId={toolResult.toolCallId}
+                              args={args}
+                              result={toolResult.result}
+                              state="result"
+                              onRerunSimulation={handleRerunSimulation}
                             />
-                          </div>
-                        );
-                      }
-                      if (part.type === "file") {
-                        const file = (
-                          part as {
-                            type: "file";
-                            file: { name: string; type: string; size: number };
-                          }
-                        ).file;
-                        return (
-                          <div
-                            key={idx}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted rounded-md border text-sm"
-                          >
-                            <svg
-                              className="w-4 h-4 text-muted-foreground"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                              />
-                            </svg>
-                            <span
-                              className="font-medium truncate max-w-xs text-foreground"
-                              title={file.name}
-                            >
-                              {file.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ({Math.ceil(file.size / 1024)} KB)
-                            </span>
-                          </div>
-                        );
-                      }
-                      if (part.type === "tool-call") {
-                        const toolCall = part as {
-                          type: "tool-call";
-                          toolCallId: string;
-                          toolName: string;
-                          args: Record<string, unknown>;
-                        };
-                        return (
-                          <ToolCallDisplay
-                            key={idx}
-                            toolName={toolCall.toolName}
-                            toolCallId={toolCall.toolCallId}
-                            args={toolCall.args}
-                            state="partial-call"
-                          />
-                        );
-                      }
-                      if (part.type === "tool-result") {
-                        const toolResult = part as {
-                          type: "tool-result";
-                          toolCallId: string;
-                          toolName: string;
-                          result: unknown;
-                          args?: Record<string, unknown>;
-                        };
-                        return (
-                          <ToolCallDisplay
-                            key={idx}
-                            toolName={toolResult.toolName}
-                            toolCallId={toolResult.toolCallId}
-                            args={toolResult.args || {}}
-                            result={toolResult.result}
-                            state="result"
-                          />
-                        );
-                      }
-                      return null;
-                    });
-                  })()}
+                          );
+                        }
+                        return null;
+                      });
+                    })()}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {/* Loading indicator when AI is thinking - only show if no assistant message yet */}
           {(status === "streaming" || status === "submitted") &&
             !messages.some((m) => m.role === "assistant") && (
@@ -429,7 +736,7 @@ export default function Chat({
               }) => Promise<void>
             )({ content: messageParts });
           }}
-          className="p-4 max-w-5xl mx-auto w-full flex flex-col gap-2"
+          className="p-4 max-w-7xl mx-auto w-full flex flex-col gap-2"
         >
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">

@@ -5,46 +5,69 @@ export const runtime = 'edge';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { parameters } = body;
+    const { parameters, originalArgs } = body;
 
-    const simulationMcpUrl = process.env.SIMULATION_MCP_URL || 'https://simulator-mcp-server.onrender.com/mcp';
+    // Extract spec from original args if provided, otherwise use defaults
+    const originalSpec = originalArgs?.spec as
+      | {
+          domain?: string;
+          model_type?: string;
+          parameters?: Record<string, number>;
+          initial_conditions?: Record<string, number>;
+          time_span?: { start?: number; end?: number; steps?: number };
+        }
+      | undefined;
+
+    const simulationMcpUrl =
+      process.env.SIMULATION_MCP_URL ||
+      "https://simulator-mcp-server.onrender.com/mcp";
 
     const response = await fetch(simulationMcpUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/event-stream'
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
       },
       body: JSON.stringify({
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         id: 1,
-        method: 'tools/call',
+        method: "tools/call",
         params: {
-          name: 'simulate_model',
+          name: "simulate_model",
           arguments: {
             spec: {
-              domain: 'epidemiology',
-              model_type: 'SIR',
+              domain: originalSpec?.domain || "epidemiology",
+              model_type: originalSpec?.model_type || "SIR",
               parameters: {
-                beta: parameters.beta || 0.3,
-                gamma: parameters.gamma || 0.1
+                beta: parameters.beta ?? originalSpec?.parameters?.beta ?? 0.3,
+                gamma:
+                  parameters.gamma ?? originalSpec?.parameters?.gamma ?? 0.1,
               },
               initial_conditions: {
-                S: 0.99,
-                I: 0.01,
-                R: 0
+                S:
+                  parameters.S ??
+                  originalSpec?.initial_conditions?.S ??
+                  0.99,
+                I:
+                  parameters.I ??
+                  originalSpec?.initial_conditions?.I ??
+                  0.01,
+                R:
+                  parameters.R ??
+                  originalSpec?.initial_conditions?.R ??
+                  0,
               },
               time_span: {
-                start: 0,
-                end: 160,
-                steps: parameters.steps || 100
+                start: originalSpec?.time_span?.start ?? 0,
+                end: originalSpec?.time_span?.end ?? 160,
+                steps: originalSpec?.time_span?.steps ?? 100,
               },
               return_data: true,
-              save_artifacts: false
-            }
-          }
-        }
-      })
+              save_artifacts: false,
+            },
+          },
+        },
+      }),
     });
 
     const text = await response.text();

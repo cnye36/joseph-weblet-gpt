@@ -218,12 +218,22 @@ Currently supported:
 - **SIR Model**: Susceptible-Infected-Recovered epidemic model
   - Parameters: `beta` (infection rate), `gamma` (recovery rate)
   - Initial conditions: `S`, `I`, `R` (must sum to ≈1.0)
+- **Lotka-Volterra Model**: Predator-prey dynamics
+  - Parameters: `alpha` (prey growth rate), `beta` (predation rate), `delta` (predator growth rate), `gamma` (predator death rate)
+  - Initial conditions: `x` (prey population), `y` (predator population)
+- **Logistic Model**: Logistic population growth
+  - Parameters: `r` (growth rate), `K` (carrying capacity)
+  - Initial conditions: `P` (population)
 
-### Coming Soon
-- Lotka-Volterra (predator-prey)
-- Logistic growth
-- Projectile motion
-- Monte Carlo simulations
+### Physics
+- **Projectile Model**: Projectile motion with gravity
+  - Parameters: `g` (gravitational acceleration), `v0` (initial velocity), `angle` (launch angle in degrees)
+  - Initial conditions: `x` (horizontal position), `y` (vertical position), `vx` (horizontal velocity), `vy` (vertical velocity)
+
+### Finance
+- **Monte Carlo Model**: Geometric Brownian motion for financial modeling
+  - Parameters: `mu` (drift rate), `sigma` (volatility), `n_paths` (number of simulation paths), `seed` (optional random seed)
+  - Initial conditions: `S` (initial asset price)
 
 ## Input Specification
 
