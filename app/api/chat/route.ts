@@ -707,6 +707,14 @@ export async function POST(req: Request) {
           console.log("\n" + "=".repeat(80));
           console.log("🏁 GENERATION COMPLETE");
           console.log("=".repeat(80));
+
+          // Cleanup MCP clients after generation completes
+          // Per AI SDK docs, close MCP clients in onFinish callback
+          // The stream may still be transmitting, but our error handling
+          // in cleanupMCPClients will gracefully handle any ECONNRESET
+          await cleanupMCPClients();
+          console.log("✅ MCP clients closed");
+
           // Log tool calls and results
           if (toolCalls && toolCalls.length > 0) {
             console.log(`\n🔧 Tool Calls Completed (${toolCalls.length} total)`);
@@ -784,19 +792,19 @@ export async function POST(req: Request) {
 
     // For DefaultChatTransport, return the UI message stream response
     // This includes tool calls and results in the message parts automatically
-    const response = result.toUIMessageStreamResponse();
-
-    // Schedule cleanup after response is returned (let stream complete first)
-    // The abort signal handler will also cleanup if request is cancelled early
-    Promise.resolve().then(async () => {
-      // Wait for the stream to be consumed before cleaning up
-      // This prevents ECONNRESET errors from premature client closure
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await cleanupMCPClients();
-      console.log("✅ MCP clients cleaned up after stream completion");
-    });
-
-    return response;
+    //
+    // NOTE: We do NOT cleanup MCP clients here because:
+    // 1. toUIMessageStreamResponse() returns immediately but streaming happens async
+    // 2. Tool calls may still be executing when this function returns
+    // 3. Edge runtime will cleanup when the request completes or aborts
+    // 4. The abort signal handler will cleanup if client disconnects early
+    // 5. The onError handler will cleanup if streaming errors occur
+    //
+    // MCP clients will naturally close when:
+    // - The request handler completes (all streaming done)
+    // - The client disconnects (abort signal fires)
+    // - An error occurs (onError or catch block)
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     // Cleanup MCP clients on error
     await cleanupMCPClients();
