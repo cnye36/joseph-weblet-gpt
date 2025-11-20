@@ -56,9 +56,11 @@ export default async function ChatBotScopedPage({
     <SidebarProvider defaultOpen={false}>
       <MainSidebar />
       <SidebarInset>
-        <div className="flex h-svh">
-          <ChatSidebar selectedBot={rawBot} />
-          <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex h-svh overflow-hidden">
+          <div className="flex-shrink-0 h-full overflow-hidden">
+            <ChatSidebar selectedBot={rawBot} />
+          </div>
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <BotHeader botId={selectedBot} fallbackName={bot.name} />
             <div className="flex-1 min-h-0">
               <Chat botId={rawBot} chatId={chatId} />

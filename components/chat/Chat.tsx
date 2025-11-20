@@ -60,40 +60,39 @@ export default function Chat({
       console.log("🎯 CHAT COMPONENT: onFinish called", { message });
       const finishedChatId = chatIdRef.current;
       if (finishedChatId) {
+        // Cast to unknown first to access parts safely
         const msg = message as unknown as {
-          parts?: unknown;
-          content?: unknown;
+          parts?: unknown[];
+          content?: string;
+          role: string;
         };
-        const rawParts = Array.isArray(msg.parts)
-          ? msg.parts
-          : Array.isArray(msg.content)
-          ? msg.content
-          : typeof msg.content === "string"
-          ? [{ type: "text", text: msg.content }]
-          : [];
-        const text = (rawParts as unknown[])
-          .map((p) => {
-            if (
-              p &&
-              typeof p === "object" &&
-              "type" in (p as Record<string, unknown>)
-            ) {
-              const part = p as { type: string; text?: string };
-              if (part.type === "text" && typeof part.text === "string")
-                return part.text;
-            }
-            return "";
-          })
-          .filter((s) => s.length > 0)
-          .join("");
+
+        // Extract text content
+        let text = "";
+        if (typeof msg.content === "string") {
+          text = msg.content;
+        } else if (Array.isArray(msg.parts)) {
+          text = msg.parts
+            .filter((p: any) => p.type === "text")
+            .map((p: any) => p.text)
+            .join("");
+        }
+
+        // Prepare payload with parts if available
+        const payload: any = {
+          chatId: finishedChatId,
+          role: "assistant",
+          content: text,
+        };
+
+        if (Array.isArray(msg.parts) && msg.parts.length > 0) {
+          payload.parts = msg.parts;
+        }
+
         await fetch("/api/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chatId: finishedChatId,
-            role: "assistant",
-            content: text,
-          }),
+          body: JSON.stringify(payload),
         });
       }
     },
@@ -170,8 +169,8 @@ export default function Chat({
   }, [chatId, setMessages]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-4 min-h-0">
         <div className="max-w-7xl mx-auto space-y-3 pb-4">
           {messages.map((m: UIMessage) => {
             // Check if this message contains a simulation - if so, we'll render it full width
@@ -506,6 +505,28 @@ export default function Chat({
                             return null;
                           }
 
+                          // CRITICAL FIX #4: Skip tool calls with error states (e.g., "output-error")
+                          // These indicate the tool failed to execute (e.g., client closed)
+                          if (
+                            toolPart.state === "output-error" ||
+                            (toolPart.state?.includes("error") &&
+                              result === undefined)
+                          ) {
+                            // Check if there's a successful call for this tool name
+                            if (successfulToolNames.has(toolName)) {
+                              // Skip failed tool calls that were retried successfully
+                              return null;
+                            }
+                            // Also skip if this is the only call and it failed - don't show broken state
+                            // The AI will explain the error in text
+                            if (
+                              !successfulToolNames.has(toolName) &&
+                              result === undefined
+                            ) {
+                              return null;
+                            }
+                          }
+
                           // Get args from input, args, or toolCallsMap
                           const args =
                             toolPart.input ||
@@ -626,7 +647,7 @@ export default function Chat({
             )}
         </div>
       </div>
-      <div className="border-t bg-background">
+      <div className="border-t bg-background flex-shrink-0">
         <form
           ref={formRef}
           onSubmit={async (e) => {

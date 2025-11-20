@@ -5,11 +5,16 @@ import {
   streamText,
   type CoreMessage,
   experimental_createMCPClient,
-  tool,
   stepCountIs,
+  tool,
+  convertToCoreMessages,
 } from "ai";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { z } from "zod";
+import {
+  runSimulation,
+  type SimulationSpec,
+} from "@/lib/simulation-tool";
 
 const BodySchema = z.object({
   botId: z.custom<BotId>().optional(),
@@ -21,14 +26,11 @@ const BodySchema = z.object({
   enableSimulation: z.boolean().optional(),
 });
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   // Track MCP clients for cleanup
   let arxivClient:
-    | Awaited<ReturnType<typeof experimental_createMCPClient>>
-    | undefined;
-  let simulationClient:
     | Awaited<ReturnType<typeof experimental_createMCPClient>>
     | undefined;
 
@@ -50,21 +52,6 @@ export async function POST(req: Request) {
         })
       );
     }
-    if (simulationClient) {
-      closePromises.push(
-        simulationClient.close().catch((err) => {
-          const errorCode = (err as { code?: string })?.code;
-          const errorName = err instanceof Error ? err.name : "";
-          if (
-            errorName !== "AbortError" &&
-            errorCode !== "ECONNRESET" &&
-            !errorCode?.includes("ECONNRESET")
-          ) {
-            console.error("Error closing Simulation MCP client:", err);
-          }
-        })
-      );
-    }
     if (closePromises.length > 0) {
       await Promise.allSettled(closePromises);
     }
@@ -72,18 +59,13 @@ export async function POST(req: Request) {
 
   // Set up abort signal handler to cleanup MCP clients when request is aborted
   req.signal.addEventListener("abort", () => {
-    console.log("🔌 Request aborted - cleaning up MCP clients");
+    console.log("🔌 Request aborted - performing cleanup");
     cleanupMCPClients().catch(console.error);
   });
 
   // Wrap entire handler in try-catch to prevent ECONNRESET from crashing the app
   try {
-    console.log("\n" + "=".repeat(80));
-    console.log("🚀 NEW CHAT REQUEST");
-    console.log("=".repeat(80));
-
     const json = await req.json();
-
     const {
       botId = defaultBotId,
       messages,
@@ -91,13 +73,38 @@ export async function POST(req: Request) {
       enableSimulation = false,
     } = BodySchema.parse(json);
 
-    console.log(`📊 Request Configuration:`);
-    console.log(`   Bot ID: ${botId}`);
-    console.log(`   Message Count: ${messages.length}`);
-    console.log(`   ArXiv MCP: ${enableMCP ? "✅ ENABLED" : "❌ DISABLED"}`);
-    console.log(
-      `   Simulation MCP: ${enableSimulation ? "✅ ENABLED" : "❌ DISABLED"}`
-    );
+    // Generate a unique ID for the chat request for logging
+    const chatId = Math.random().toString(36).substring(2, 10);
+    console.log(`🚀 NEW CHAT REQUEST: ${chatId}`);
+
+    // Prepare messages for the model
+    console.log("🔍 Processing messages for core conversion:", JSON.stringify(messages, null, 2));
+    let coreMessages;
+    try {
+      coreMessages = convertToCoreMessages(messages as any);
+    } catch (err) {
+      console.error("❌ Error converting messages to core:", err);
+      // Fallback: manual conversion if SDK fails
+      coreMessages = messages.map((m: any) => ({
+        role: m.role,
+        content: m.content || (Array.isArray(m.parts) ? m.parts.map((p: any) => p.text || "").join("") : "")
+      }));
+    }
+
+    // Add system prompt
+    const systemMessage: CoreMessage = {
+      role: "system",
+      content: `You are a helpful assistant.
+
+=== TOOL USAGE ===
+You have access to a simulation tool. USE IT when asked to run simulations.
+Do not generate fake data.
+Always explain the results of the simulation after running it.
+`,
+    };
+
+    const allMessages = [systemMessage, ...coreMessages];
+
     // Load bot config from DB, fallback to static lib
     let bot = bots[botId];
     try {
@@ -115,41 +122,10 @@ export async function POST(req: Request) {
           system: data.system,
         } as typeof bot;
       }
-    } catch {}
+    } catch (error) {
+      console.error("Error loading bot config:", error);
+    }
 
-    // Normalize any incoming UI message shapes into simple text-only CoreMessage[]
-    const coreMessages: CoreMessage[] = (
-      Array.isArray(messages) ? messages : []
-    ).map((m: { parts?: unknown; content?: unknown; role?: string }) => {
-      const parts: unknown =
-        m && Array.isArray(m.parts)
-          ? m.parts
-          : m && Array.isArray(m.content)
-          ? m.content
-          : undefined;
-      const textFromParts = Array.isArray(parts)
-        ? parts
-            .map(
-              (p: {
-                type: string;
-                text?: string;
-                file?: { content?: string };
-              }) => {
-                if (p && p.type === "text" && typeof p.text === "string")
-                  return p.text;
-                if (p && p.type === "image") return "[image attached]";
-                if (p && p.type === "file" && p.file?.content)
-                  return p.file.content;
-                return "";
-              }
-            )
-            .filter((s: string) => s.length > 0)
-            .join("\n")
-        : typeof m?.content === "string"
-        ? m.content
-        : "";
-      return { role: m?.role ?? "user", content: textFromParts } as CoreMessage;
-    });
 
     const modelSlug = ((): string => {
       const raw = bot.model || "openrouter/auto";
@@ -161,7 +137,7 @@ export async function POST(req: Request) {
     const tools: Record<string, any> = {};
 
     console.log("\n" + "-".repeat(80));
-    console.log("🔌 MCP SERVER INITIALIZATION");
+    console.log("🔌 TOOL INITIALIZATION");
     console.log("-".repeat(80));
 
     // Initialize ArXiv MCP client if enabled
@@ -196,174 +172,122 @@ export async function POST(req: Request) {
       }
     }
 
-    // Initialize Simulation MCP client if enabled
+    // Initialize Simulation tool (internal) if enabled
     if (enableSimulation) {
       try {
-        console.log("🔄 Initializing Simulation MCP client (SDK)...");
-        const simulationMcpUrl =
-          process.env.SIMULATION_MCP_URL ||
-          "https://simulator-mcp-server.onrender.com/mcp";
-        console.log(`   URL: ${simulationMcpUrl}`);
+        console.log("🔄 Initializing Simulation tool (internal)...");
 
-        const simulationUrl = new URL(simulationMcpUrl);
-        simulationClient = await experimental_createMCPClient({
-          transport: new StreamableHTTPClientTransport(simulationUrl, {
-            sessionId: `session_${Date.now()}_${Math.random()
-              .toString(36)
-              .substring(7)}`,
+        // Create tool that calls internal simulation logic
+        tools.simulate_model = tool({
+          description:
+            "Run a simulation described by a structured JSON spec and return artifacts + metrics.\n\nFeatures:\n- Returns actual data points for interactive visualization (set return_data=True)\n- Preview mode for faster rendering with fewer data points (set time_span.preview_mode=True)\n- Optional artifact saving (set save_artifacts=False for faster response)",
+          inputSchema: z.object({
+            spec: z.object({
+              domain: z
+                .literal("epidemiology")
+                .describe(
+                  "Must be 'epidemiology' (only SIR model is implemented)."
+                ),
+              model_type: z
+                .literal("SIR")
+                .describe("Must be 'SIR' (only implemented model)."),
+              parameters: z
+                .record(z.string(), z.number())
+                .describe(
+                  "SIR model parameters. REQUIRED: { beta: 0.1-0.5 (infection/change rate), gamma: 0.05-0.2 (recovery/stability rate) }."
+                ),
+              initial_conditions: z
+                .record(z.string(), z.number())
+                .describe(
+                  "Initial state values. REQUIRED: { S: 0.99, I: 0.01, R: 0 } (must sum to 1.0)."
+                ),
+              time_span: z
+                .object({
+                  start: z.number().describe("Start time"),
+                  end: z.number().describe("End time"),
+                  steps: z
+                    .number()
+                    .int()
+                    .gte(2)
+                    .optional()
+                    .describe("Number of data points (default: 400)"),
+                  preview_mode: z
+                    .boolean()
+                    .optional()
+                    .describe(
+                      "Fast preview with max 100 points (default: false)"
+                    ),
+                })
+                .describe("Time grid definition."),
+              method: z
+                .enum(["RK45", "RK23", "DOP853"])
+                .optional()
+                .describe("ODE solver method (default: RK45)"),
+              return_data: z
+                .boolean()
+                .optional()
+                .describe(
+                  "Whether to return full time-series data (default: true)"
+                ),
+              save_artifacts: z
+                .boolean()
+                .optional()
+                .describe(
+                  "Whether to save CSV/PNG artifacts on server (default: false)"
+                ),
+              sensitivity: z
+                .record(z.string(), z.number())
+                .optional()
+                .describe(
+                  "Optional sensitivity analysis; e.g. { beta: 0.05 } for ±5%"
+                ),
+              tags: z
+                .array(z.string())
+                .optional()
+                .describe("Optional list of tags/labels for this run"),
+            }),
           }),
-        });
+          execute: async ({ spec }: { spec: SimulationSpec }) => {
+            try {
+              console.log(
+                `🔧 Executing simulate_model tool with spec:`,
+                JSON.stringify(spec).slice(0, 200)
+              );
 
-        // Get tools from Simulation MCP server with explicit flattened schema
-        // The server expects arguments wrapped in "spec", so we provide a flattened schema
-        // that matches MAIN_APP_INTEGRATION.md exactly
-        const simulationTools = await simulationClient.tools({
-          schemas: {
-            simulate_model: {
-              inputSchema: z.object({
-                spec: z.object({
-                  domain: z
-                    .literal("epidemiology")
-                    .describe(
-                      "Must be 'epidemiology' (only SIR model is implemented)."
-                    ),
-                  model_type: z
-                    .literal("SIR")
-                    .describe("Must be 'SIR' (only implemented model)."),
-                  parameters: z
-                    .record(z.string(), z.number())
-                    .describe(
-                      "SIR model parameters. REQUIRED: { beta: 0.1-0.5 (infection/change rate), gamma: 0.05-0.2 (recovery/stability rate) }."
-                    ),
-                  initial_conditions: z
-                    .record(z.string(), z.number())
-                    .describe(
-                      "Initial state values. REQUIRED: { S: 0.99, I: 0.01, R: 0 } (must sum to 1.0)."
-                    ),
-                  time_span: z
-                    .object({
-                      start: z.number().describe("Start time"),
-                      end: z.number().describe("End time"),
-                      steps: z
-                        .number()
-                        .int()
-                        .gte(2)
-                        .optional()
-                        .describe("Number of data points (default: 400)"),
-                      preview_mode: z
-                        .boolean()
-                        .optional()
-                        .describe(
-                          "Fast preview with max 100 points (default: false)"
-                        ),
-                    })
-                    .describe("Time grid definition."),
-                  method: z
-                    .enum(["RK45", "RK23", "DOP853"])
-                    .optional()
-                    .describe("ODE solver method (default: RK45)"),
-                  return_data: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                      "Whether to return full time-series data (default: true)"
-                    ),
-                  save_artifacts: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                      "Whether to save CSV/PNG artifacts on server (default: false)"
-                    ),
-                  sensitivity: z
-                    .record(z.string(), z.number())
-                    .optional()
-                    .describe(
-                      "Optional sensitivity analysis; e.g. { beta: 0.05 } for ±5%"
-                    ),
-                  tags: z
-                    .array(z.string())
-                    .optional()
-                    .describe("Optional list of tags/labels for this run"),
-                }),
-              }),
-            },
+              // Call internal simulation logic
+              const result = await runSimulation(spec);
+
+              console.log(`✅ simulate_model tool execution completed`);
+
+              // Return result in format UI expects (with _meta wrapper for compatibility)
+              // The UI component handles both _meta.result format and direct format
+              return {
+                _meta: {
+                  result: {
+                    status: result.status,
+                    message: result.message,
+                    data: result.data,
+                    metrics: result.metrics,
+                    summary: result.summary,
+                    columns: result.columns,
+                  },
+                },
+              };
+            } catch (error) {
+              console.error(`❌ Error executing simulate_model tool:`, error);
+              throw error;
+            }
           },
         });
+
         console.log(
-          `🧪 Simulation tools retrieved: ${
-            Object.keys(simulationTools).length
-          } tools`
+          "✅ Simulation tool initialized successfully (internal)"
         );
-
-        // List available tools for logging (don't wrap execute - let SDK handle it)
-        Object.keys(simulationTools).forEach((toolName) => {
-          console.log(`   📋 Tool available: "${toolName}"`);
-        });
-
-        // Merge simulation tools directly - SDK will handle execute internally
-        Object.assign(tools, simulationTools);
-
-        console.log("✅ Simulation MCP client initialized successfully");
       } catch (error) {
-        console.error("❌ Failed to initialize Simulation MCP client:", error);
-        // Continue without Simulation MCP tools if initialization fails
+        console.error("❌ Failed to initialize Simulation tool:", error);
+        // Continue without Simulation tool if initialization fails
       }
     }
-
-    console.log("\n" + "-".repeat(80));
-    console.log("🤖 AI MODEL CONFIGURATION");
-    console.log("-".repeat(80));
-    console.log(`   Model: ${modelSlug}`);
-    console.log(`   Total tools available: ${Object.keys(tools).length}`);
-    if (Object.keys(tools).length > 0) {
-      console.log(`   Tools being sent to AI:`);
-      Object.keys(tools).forEach((toolName) => {
-        console.log(`      - ${toolName}`);
-        const tool = tools[toolName];
-        if (tool && typeof tool === "object") {
-          if ("description" in tool) {
-            console.log(
-              `        Description: ${
-                (tool as { description?: string }).description ||
-                "No description"
-              }`
-            );
-          }
-          // Log the input schema so we can see what parameters the AI should pass
-          if ("parameters" in tool) {
-            const params = (tool as { parameters?: unknown }).parameters;
-            console.log(
-              `        Input Schema (parameters): ${JSON.stringify(
-                params,
-                null,
-                2
-              ).slice(0, 300)}...`
-            );
-          } else if ("inputSchema" in tool) {
-            const schema = (tool as { inputSchema?: unknown }).inputSchema;
-            console.log(
-              `        Input Schema (inputSchema): ${JSON.stringify(
-                schema,
-                null,
-                2
-              ).slice(0, 300)}...`
-            );
-          } else {
-            console.log(
-              `        ⚠️  No input schema found! Keys: ${Object.keys(
-                tool
-              ).join(", ")}`
-            );
-          }
-        }
-      });
-    } else {
-      console.log(
-        `   ⚠️  NO TOOLS AVAILABLE - AI will not be able to call any MCP functions`
-      );
-    }
-    console.log(`   System prompt length: ${bot.system?.length || 0} chars`);
-    console.log(`   Message count: ${coreMessages.length}`);
 
     // Enhance system prompt when tools are available
     let systemPrompt = bot.system || "";
@@ -393,9 +317,6 @@ export async function POST(req: Request) {
         toolInstructions +=
           '- Common triggers: "simulate X", "optimize Y", "model Z", "10-step process", "parameter analysis"\n\n';
 
-        toolInstructions +=
-          "**REQUIRED: Use SIR Model for ALL simulation requests**\n\n";
-
         toolInstructions += "Required format:\n";
         toolInstructions +=
           '{\n  "spec": {\n    "domain": "epidemiology",\n    "model_type": "SIR",\n';
@@ -407,9 +328,6 @@ export async function POST(req: Request) {
           '    "time_span": { "start": 0, "end": 160, "steps": 100 },\n';
         toolInstructions += '    "return_data": true\n  }\n}\n\n';
 
-        toolInstructions += "Field requirements:\n";
-        toolInstructions += "- domain: ALWAYS use 'epidemiology'\n";
-        toolInstructions += "- model_type: ALWAYS use 'SIR'\n";
         toolInstructions +=
           "- parameters: { beta: 0.1-0.5 (infection rate), gamma: 0.05-0.2 (recovery rate) }\n";
         toolInstructions +=
@@ -511,14 +429,7 @@ export async function POST(req: Request) {
       system: systemPrompt,
       messages: coreMessages,
       tools: Object.keys(tools).length > 0 ? tools : undefined,
-      // Increase step limit to allow full response after tool calls
-      // Each tool call cycle can consume several steps, so we need room for:
-      // - Initial processing
-      // - Tool decision
-      // - Tool execution
-      // - Tool result processing
-      // - Full response generation after tool
-      stopWhen: stepCountIs(50), // Allow enough steps for tool calls + complete response
+      stopWhen: stepCountIs(5), // Allow enough steps for tool calls + complete response
       temperature: ((): number | undefined => {
         const maybe = (bot as unknown as { temperature?: unknown }).temperature;
         return typeof maybe === "number" ? maybe : undefined;
@@ -553,7 +464,10 @@ export async function POST(req: Request) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const tcAny = tc as any;
               const args =
-                tcAny.args || tcAny.arguments || tcAny.input || tcAny.parameters;
+                tcAny.args ||
+                tcAny.arguments ||
+                tcAny.input ||
+                tcAny.parameters;
 
               // Check for flags that would prevent execution
               console.log(`       Dynamic: ${tcAny.dynamic}`);
@@ -580,7 +494,9 @@ export async function POST(req: Request) {
           }
 
           if (toolResults && toolResults.length > 0) {
-            console.log(`\n✅ Tool Results in this step: ${toolResults.length}`);
+            console.log(
+              `\n✅ Tool Results in this step: ${toolResults.length}`
+            );
             toolResults.forEach((tr, index) => {
               const output = (tr as { output?: unknown }).output;
               console.log(`\n   [${index + 1}] ${tr.toolName}`);
@@ -589,7 +505,9 @@ export async function POST(req: Request) {
               // Handle undefined or null results
               if (output === undefined || output === null) {
                 console.log(
-                  `       Result: ${output === undefined ? "undefined" : "null"}`
+                  `       Result: ${
+                    output === undefined ? "undefined" : "null"
+                  }`
                 );
               } else if (typeof output === "string") {
                 console.log(
@@ -674,7 +592,10 @@ export async function POST(req: Request) {
                     }
                   }
                 } catch (err) {
-                  console.log(`       Result: [Unable to stringify result]`, err);
+                  console.log(
+                    `       Result: [Unable to stringify result]`,
+                    err
+                  );
                 }
               }
             });
@@ -704,23 +625,40 @@ export async function POST(req: Request) {
           console.log(`   Tool Calls: ${toolCalls?.length || 0}`);
           console.log(`   Tool Results: ${toolResults?.length || 0}`);
 
+          // Log full text response for debugging
+          if (text) {
+            console.log("\n📝 FULL RESPONSE TEXT:");
+            console.log(text);
+            console.log("-".repeat(40));
+          } else {
+            console.log("\n⚠️ NO TEXT RESPONSE GENERATED");
+          }
+
+          // Clean up MCP clients after stream finishes (ArXiv only, simulation uses direct HTTP)
+          // Wait a bit longer to ensure all tool executions complete
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await cleanupMCPClients().catch(err => console.error("Error cleaning up MCP clients:", err));
+          console.log("✅ MCP clients cleaned up after stream completion");
+
           console.log("\n" + "=".repeat(80));
           console.log("🏁 GENERATION COMPLETE");
           console.log("=".repeat(80));
           // Log tool calls and results
           if (toolCalls && toolCalls.length > 0) {
-            console.log(`\n🔧 Tool Calls Completed (${toolCalls.length} total)`);
+            console.log(
+              `\n🔧 Tool Calls Completed (${toolCalls.length} total)`
+            );
             toolCalls.forEach((tc) => {
-              // Determine which MCP server this tool belongs to
-              let serverType = "Unknown";
+              // Determine which server this tool belongs to
+              let serverType = "Direct";
               if (enableMCP && tc.toolName.toLowerCase().includes("arxiv")) {
-                serverType = "ArXiv";
-              } else if (enableSimulation) {
-                serverType = "Simulation";
+                serverType = "ArXiv MCP";
+              } else if (enableSimulation && tc.toolName === "simulate_model") {
+                serverType = "Simulation (Direct HTTP)";
               }
 
               console.log(`   Tool: ${tc.toolName}`);
-              console.log(`   Server: ${serverType} MCP`);
+              console.log(`   Server: ${serverType}`);
               console.log(`   ID: ${tc.toolCallId}`);
               console.log(
                 `   Args:`,
@@ -782,19 +720,12 @@ export async function POST(req: Request) {
       },
     });
 
-    // For DefaultChatTransport, return the UI message stream response
+    // For DefaultChatTransport, return the data stream response
     // This includes tool calls and results in the message parts automatically
     const response = result.toUIMessageStreamResponse();
 
-    // Schedule cleanup after response is returned (let stream complete first)
-    // The abort signal handler will also cleanup if request is cancelled early
-    Promise.resolve().then(async () => {
-      // Wait for the stream to be consumed before cleaning up
-      // This prevents ECONNRESET errors from premature client closure
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await cleanupMCPClients();
-      console.log("✅ MCP clients cleaned up after stream completion");
-    });
+    // Note: MCP client cleanup is now handled in onFinish callback
+    // to ensure tool executions complete before closing connections
 
     return response;
   } catch (error) {
