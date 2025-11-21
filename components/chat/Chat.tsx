@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { UIMessage, useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { Message } from "ai";
+import { useChat } from "ai/react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Send, BookOpen, FlaskConical } from "lucide-react";
@@ -29,7 +29,7 @@ export default function Chat({
   const [enableMCP, setEnableMCP] = useState(false);
   const [enableSimulation, setEnableSimulation] = useState(false);
 
-  // Use refs to track current state for dynamic body values (AI SDK v5)
+  // Use refs to track current state for dynamic body values
   const enableMCPRef = useRef(enableMCP);
   const enableSimulationRef = useRef(enableSimulation);
 
@@ -43,20 +43,15 @@ export default function Chat({
     chatIdRef.current = chatId;
   }, [chatId]);
 
-  const { messages, sendMessage, status, setMessages } = useChat({
-    transport: useMemo(
-      () =>
-        new DefaultChatTransport({
-          api: "/api/chat",
-          body: () => ({
-            botId,
-            enableMCP: enableMCPRef.current,
-            enableSimulation: enableSimulationRef.current,
-          }),
-        }),
-      [botId]
-    ),
-    onFinish: async ({ message }) => {
+  const chatHelpers = useChat({
+    api: "/api/chat",
+    maxSteps: 5, // Must match server-side maxSteps for AI SDK v4
+    body: {
+      botId,
+      enableMCP: enableMCP,
+      enableSimulation: enableSimulation,
+    },
+    onFinish: async (message) => {
       console.log("🎯 CHAT COMPONENT: onFinish called", { message });
       const finishedChatId = chatIdRef.current;
       if (finishedChatId) {
@@ -98,10 +93,13 @@ export default function Chat({
     },
   });
 
-  // Debug: Log status changes
+  // Destructure the properties we need
+  const { messages, isLoading, setMessages, append } = chatHelpers;
+
+  // Debug: Log loading state changes
   useEffect(() => {
-    console.log("🔄 CHAT STATUS CHANGED:", status);
-  }, [status]);
+    console.log("🔄 CHAT LOADING STATE:", isLoading);
+  }, [isLoading]);
 
   // Create rerun callback for simulations
   const handleRerunSimulation = useMemo(
@@ -128,17 +126,19 @@ export default function Chat({
       )}.`;
 
       // Send the message to the LLM
+      // Send the message to the LLM
       const messageParts = [{ type: "text" as const, text: message }];
-      await (
-        sendMessage as unknown as (arg: {
-          content: typeof messageParts;
-        }) => Promise<void>
-      )({ content: messageParts });
+      await append({
+        role: "user",
+        content: message,
+        
+        parts: messageParts,
+      });
     },
-    [sendMessage]
+    [append]
   );
 
-  const [input, setInput] = useState("");
+  const [customInput, setCustomInput] = useState("");
   const [attachments, setAttachments] = useState<
     {
       name: string;
@@ -156,14 +156,15 @@ export default function Chat({
       const res = await fetch(`/api/messages?chatId=${chatId}`);
       if (!res.ok) return;
       const data = (await res.json()) as {
-        messages: { role: UIMessage["role"]; content: string }[];
+        messages: { role: Message["role"]; content: string }[];
       };
       setMessages(
         data.messages.map((m, i) => ({
           id: String(i),
           role: m.role,
+          content: m.content,
           parts: [{ type: "text", text: m.content }],
-        })) as UIMessage[]
+        })) as Message[]
       );
     })();
   }, [chatId, setMessages]);
@@ -172,7 +173,7 @@ export default function Chat({
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 min-h-0">
         <div className="max-w-7xl mx-auto space-y-3 pb-4">
-          {messages.map((m: UIMessage) => {
+          {messages.map((m: Message) => {
             // Check if this message contains a simulation - if so, we'll render it full width
             const msg = m as unknown as { parts?: unknown; content?: unknown };
             const parts = Array.isArray(msg.parts)
@@ -616,7 +617,7 @@ export default function Chat({
             );
           })}
           {/* Loading indicator when AI is thinking - only show if no assistant message yet */}
-          {(status === "streaming" || status === "submitted") &&
+          {isLoading &&
             !messages.some((m) => m.role === "assistant") && (
               <div className="flex gap-4 px-4 py-6">
                 <div className="size-8 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
@@ -652,7 +653,7 @@ export default function Chat({
           ref={formRef}
           onSubmit={async (e) => {
             e.preventDefault();
-            const text = input.trim();
+            const text = customInput.trim();
             if (!text && attachments.length === 0) return;
             let currentChatId = chatId;
             let shouldGenerateTitle = false;
@@ -748,14 +749,15 @@ export default function Chat({
               }),
             });
 
-            setInput("");
+            setCustomInput("");
             setAttachments([]);
 
-            await (
-              sendMessage as unknown as (arg: {
-                content: typeof messageParts;
-              }) => Promise<void>
-            )({ content: messageParts });
+            await append({
+              role: "user",
+              content: text,
+              // @ts-expect-error - passing parts for custom handling
+              parts: messageParts,
+            });
           }}
           className="p-4 max-w-7xl mx-auto w-full flex flex-col gap-2"
         >
@@ -825,8 +827,8 @@ export default function Chat({
           </div>
           <div className="relative">
             <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
@@ -834,7 +836,7 @@ export default function Chat({
                   !e.nativeEvent.isComposing
                 ) {
                   e.preventDefault();
-                  if (status === "ready") {
+                  if (!isLoading) {
                     formRef.current?.requestSubmit();
                   }
                 }
@@ -847,7 +849,7 @@ export default function Chat({
               onClick={() => fileInputRef.current?.click()}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Attach image"
-              disabled={status !== "ready"}
+              disabled={isLoading}
             >
               <ImageIcon className="size-5" />
             </button>
@@ -855,7 +857,7 @@ export default function Chat({
               type="submit"
               size="icon"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-              disabled={status !== "ready"}
+              disabled={isLoading}
               aria-label="Send"
             >
               <Send className="size-4" />

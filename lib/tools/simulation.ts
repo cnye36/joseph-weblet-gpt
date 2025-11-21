@@ -6,7 +6,7 @@ export const createSimulationTool = () => {
   return tool({
     description:
       "Run a simulation described by a structured JSON spec and return artifacts + metrics.\n\nFeatures:\n- Returns actual data points for interactive visualization (set return_data=True)\n- Preview mode for faster rendering with fewer data points (set time_span.preview_mode=True)\n- Optional artifact saving (set save_artifacts=False for faster response)",
-    inputSchema: z.object({
+    parameters: z.object({
       spec: z.object({
         domain: z
           .literal("epidemiology")
