@@ -9,6 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { SimulationRenderer } from "./SimulationRenderer";
+import { InteractiveSimulation } from "../simulation/InteractiveSimulation";
 
 interface ToolCallDisplayProps {
   toolName: string;
@@ -201,6 +202,72 @@ export function ToolCallDisplay({
   const [updatedResult, setUpdatedResult] = useState<unknown>(result);
   const [showPayload, setShowPayload] = useState(false);
 
+  // Debug logging for simulate_model
+  if (toolName === "simulate_model") {
+    console.log("🔍 TOOL DISPLAY: simulate_model received", {
+      toolName,
+      toolCallId,
+      state,
+      hasResult: !!result,
+      resultKeys: result && isRecord(result) ? Object.keys(result) : null,
+      hasMeta: result && isRecord(result) && !!result._meta,
+      metaUI:
+        result && isRecord(result) && isRecord(result._meta)
+          ? result._meta.ui
+          : null,
+      fullResult: result,
+    });
+  }
+
+  // Helper function to render interactive simulation
+  const renderInteractiveSimulation = () => {
+    if (
+      state !== "result" ||
+      !currentResult ||
+      !isRecord(currentResult) ||
+      !currentResult._meta ||
+      !isRecord(currentResult._meta) ||
+      currentResult._meta.ui !== "interactive_simulation" ||
+      !currentResult._meta.config ||
+      !isRecord(currentResult._meta.config)
+    ) {
+      return null;
+    }
+
+    console.log("✅ TOOL DISPLAY: Rendering interactive simulation!", {
+      toolName,
+      state,
+      hasConfig: true,
+    });
+
+    const config = currentResult._meta.config as {
+      initialParameters?: { beta: number; gamma: number };
+      initialState?: { S: number; I: number; R: number };
+      timeEnd?: number;
+      timeSteps?: number;
+    };
+
+    const summary =
+      typeof currentResult.summary === "string" ? currentResult.summary : null;
+
+    return (
+      <div className="w-full pb-3 px-3" key={`interactive-sim-${toolCallId}`}>
+        {summary && (
+          <div className="mb-4 text-sm text-muted-foreground">{summary}</div>
+        )}
+        <InteractiveSimulation
+          initialParameters={
+            config.initialParameters || { beta: 0.25, gamma: 0.1 }
+          }
+          initialState={config.initialState || { S: 0.99, I: 0.01, R: 0 }}
+          timeEnd={config.timeEnd || 120}
+          timeSteps={config.timeSteps || 200}
+          showDescription={true}
+        />
+      </div>
+    );
+  };
+
   // Check if result is a simulation
   const isSimulationResult = (res: unknown): res is SimulationResult => {
     if (!res || typeof res !== "object") return false;
@@ -249,14 +316,9 @@ export function ToolCallDisplay({
   const simulationResult = useMemo(() => {
     if (!resultKey) return null;
 
-    console.log("🔍 CLIENT: Checking if result is simulation");
-
     if (!currentResult || !isSimulationResult(currentResult)) {
-      console.log("❌ CLIENT: Not a simulation result");
       return null;
     }
-
-    console.log("✅ CLIENT: Detected simulation result, unwrapping...");
 
     const obj = currentResult as Record<string, unknown>;
 
@@ -266,10 +328,7 @@ export function ToolCallDisplay({
       if (meta.result && typeof meta.result === "object") {
         const unwrapped = meta.result as Record<string, unknown>;
 
-        console.log("📦 CLIENT: Unwrapped data structure", {
-          hasData: !!unwrapped.data,
-          dataLength: Array.isArray(unwrapped.data) ? unwrapped.data.length : 0,
-        });
+        // Unwrapped data structure
 
         // Extract parameters from original args
         const spec = args?.spec as Record<string, unknown> | undefined;
@@ -380,7 +439,7 @@ export function ToolCallDisplay({
           isSimulation: true,
         } as SimulationResult;
 
-        console.log("✅ CLIENT: Created simulation result for rendering");
+        // Created simulation result for rendering
 
         return transformed;
       }
@@ -690,18 +749,21 @@ export function ToolCallDisplay({
       {state === "partial-call" &&
         (isArxivTool ? renderArxivProcessing() : renderGenericProcessing())}
 
-      {/* Render simulation visualization ONLY when result is complete (not during partial-call) */}
+      {/* NEW: Render INTERACTIVE simulation UI with live controls */}
+      {renderInteractiveSimulation()}
+
+      {/* OLD: Render simulation visualization ONLY when result is complete (not during partial-call) */}
       {state === "result" &&
         simulationResult &&
+        !(
+          currentResult &&
+          isRecord(currentResult) &&
+          currentResult._meta &&
+          isRecord(currentResult._meta) &&
+          currentResult._meta.ui === "interactive_simulation"
+        ) &&
         (() => {
-          console.log("🎨 CLIENT: Rendering SimulationRenderer with data", {
-            toolCallId,
-            dataPoints: simulationResult.data?.length,
-            hasParameters: !!simulationResult.parameters,
-            parameterCount: simulationResult.parameters
-              ? Object.keys(simulationResult.parameters).length
-              : 0,
-          });
+          // Rendering SimulationRenderer with data
 
           // Create update callback to update simulation in place
           const handleUpdate = (newData: SimulationResult) => {

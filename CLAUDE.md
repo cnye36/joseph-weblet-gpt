@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Weblet GPT is a multi-agent chat application built with Next.js 15 App Router, featuring authenticated users, specialized bot assistants with generative UI capabilities, and MCP (Model Context Protocol) integration for external tools. The app uses Supabase for auth/database, OpenRouter for AI models, and PayPal for subscription management.
+Weblet GPT is a multi-agent chat application built with Next.js 15 App Router, featuring authenticated users, specialized bot assistants with generative UI capabilities, and tools integration. The app uses Supabase for auth/database, OpenRouter for AI models, and PayPal for subscription management.
 
 ## Development Commands
 
@@ -18,9 +18,6 @@ pnpm start        # Start production server
 pnpm lint         # Run ESLint
 pnpm typecheck    # TypeScript type checking (no emit)
 
-# MCP Testing
-pnpm test:mcp     # Test MCP server connections (ArXiv & Simulation)
-```
 
 ## Architecture
 
@@ -43,41 +40,13 @@ Bots are AI assistants with specialized system prompts and generative UI capabil
 - **Bot System Prompts**: All bots include `GENERATIVE_UI_INSTRUCTIONS` ([lib/bots.ts:4-73](lib/bots.ts#L4-L73)) for Mermaid diagrams, tables, and code blocks
 - **Admin Functions**: Avatar generation (DALL-E), prompt enhancement, CRUD operations at `/app/admin`
 
-### MCP (Model Context Protocol) Integration
 
-The app uses the AI SDK's `experimental_createMCPClient` for both MCP servers—no custom transport logic required now that both expose standard `/mcp` endpoints:
-
-#### MCP Servers
-1. **ArXiv MCP** (`ARXIV_MCP_URL`): Research paper search
-   - Standard HTTP transport → `experimental_createMCPClient({ transport: { type: 'http', url: .../mcp } })`
-   - Tools discovered via `client.tools()` and passed directly to `streamText`
-
-2. **Simulation MCP** (`SIMULATION_MCP_URL`): Scientific simulations (SIR model, etc.)
-   - Uses `StreamableHTTPClientTransport` with the AI SDK (server still streams SSE-style responses)
-   - Requires inputs wrapped in `spec` (see `docs/MAIN_APP_INTEGRATION.md`)
-   - Returns structured data for visualization
-
-#### MCP Request Flow
-1. User toggles MCP in chat UI → `enableMCP` / `enableSimulation` state
-2. Chat component passes flags to `/api/chat` via `body()` function
-3. API route initializes MCP clients and loads tools
-4. Tools added to AI SDK `streamText()` configuration
-5. Model calls tools during generation
-6. Results rendered in UI via `ToolCallDisplay` or `SimulationRenderer`
-
-**Critical**: Simulation MCP requires arguments wrapped in `spec` key:
-```typescript
-arguments: { spec: { domain, model_type, parameters, ... } }
-```
-
-See [MCP_DEBUGGING_GUIDE.md](MCP_DEBUGGING_GUIDE.md) for troubleshooting and [docs/MAIN_APP_INTEGRATION.md](docs/MAIN_APP_INTEGRATION.md) for Simulation MCP integration details.
 
 ### Chat Streaming Architecture
 
 - **Edge Runtime**: [app/api/chat/route.ts](app/api/chat/route.ts) uses Edge runtime for streaming
 - **AI SDK v5**: Uses `@ai-sdk/react` with `DefaultChatTransport` pattern
   - Dynamic body values via ref pattern ([components/chat/Chat.tsx:33-39](components/chat/Chat.tsx#L33-L39))
-  - Enables/disables MCP tools per-request without recreating transport
 - **Message Normalization**: API converts UI messages (with `parts`) to `CoreMessage[]` ([app/api/chat/route.ts:66-97](app/api/chat/route.ts#L66-L97))
   - Handles text, images, and file attachments
   - Flattens multi-part messages into single text content
@@ -186,12 +155,7 @@ When modifying bot system prompts in [lib/bots.ts](lib/bots.ts):
 3. Specify expected output format (tables, charts, diagrams)
 4. For Ganttrify: Preserve strict Mermaid syntax rules
 
-### Debugging MCP Integration
-1. Check server console logs for MCP initialization messages
-2. Run `pnpm test:mcp` to verify connectivity
-3. Look for `🔌 MCP SERVER INITIALIZATION` and `🤖 AI MODEL CONFIGURATION` log sections
-4. Verify `enableMCP`/`enableSimulation` toggles are ON in UI
-5. See [MCP_DEBUGGING_GUIDE.md](MCP_DEBUGGING_GUIDE.md) for detailed troubleshooting
+
 
 ## Important Notes
 
@@ -208,7 +172,6 @@ All environment variables are defined in `.env.local`:
 - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - OpenRouter: `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`
 - OpenAI: `OPENAI_API_KEY` (for admin avatar generation)
-- MCP Servers: `ARXIV_MCP_URL`, `SIMULATION_MCP_URL`
 - PayPal: Multiple variables (see [PayPal Subscription Flow](#paypal-subscription-flow))
 - Admin: `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_EMAIL_2`
 
@@ -248,7 +211,7 @@ components/
 │   ├── EnhancedTable.tsx          # Sortable table component
 │   ├── CodeBlock.tsx              # Syntax-highlighted code
 │   ├── SimulationRenderer.tsx     # Simulation visualization
-│   └── ToolCallDisplay.tsx        # MCP tool call display
+│   └── ToolCallDisplay.tsx        # Tool call display
 ├── sidebar/                       # Chat sidebar (chat list, new chat)
 ├── PricingModal.tsx               # PayPal subscription modal
 └── ui/                            # shadcn/ui components
@@ -263,8 +226,6 @@ lib/
 └── avatar-generation.ts           # DALL-E avatar generation
 
 docs/
-├── CONNECTING_AI_APP.md           # MCP server connection guide
-└── MAIN_APP_INTEGRATION.md        # Simulation MCP integration guide
-
+├── 
 supabase/migrations/               # Database migrations
 ```

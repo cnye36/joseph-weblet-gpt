@@ -1,15 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Message } from "ai";
-import { useChat } from "ai/react";
+import { Message, useChat } from "ai/react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Send, BookOpen, FlaskConical } from "lucide-react";
 import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import Image from "next/image";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import MessageRenderer from "./MessageRenderer";
@@ -26,33 +25,69 @@ export default function Chat({
   const router = useRouter();
   const searchParams = useSearchParams();
   const chatIdRef = useRef<string | null>(chatId);
-  const [enableMCP, setEnableMCP] = useState(false);
+  const [enableArxiv, setEnableArxiv] = useState(false);
   const [enableSimulation, setEnableSimulation] = useState(false);
-
-  // Use refs to track current state for dynamic body values
-  const enableMCPRef = useRef(enableMCP);
-  const enableSimulationRef = useRef(enableSimulation);
-
-  useEffect(() => {
-    enableMCPRef.current = enableMCP;
-    enableSimulationRef.current = enableSimulation;
-  }, [enableMCP, enableSimulation]);
 
   const isNewChat = searchParams.get("new") === "true";
   useEffect(() => {
     chatIdRef.current = chatId;
   }, [chatId]);
 
+  // Use refs for toggle states to ensure latest values are always captured
+  const enableArxivRef = useRef(enableArxiv);
+  const enableSimulationRef = useRef(enableSimulation);
+
+  // Update refs when toggle states change
+  useEffect(() => {
+    enableArxivRef.current = enableArxiv;
+  }, [enableArxiv]);
+
+  useEffect(() => {
+    enableSimulationRef.current = enableSimulation;
+  }, [enableSimulation]);
+
+  // Custom fetch that injects current toggle state into request body
+  const customFetch = useCallback(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      // Get the current body from the request
+      const originalBody = init?.body ? JSON.parse(init.body as string) : {};
+
+      // Always inject the latest toggle state from refs
+      const enhancedBody = {
+        ...originalBody,
+        botId,
+        chatId: chatIdRef.current,
+        enableArxiv: enableArxivRef.current,
+        enableSimulation: enableSimulationRef.current,
+      };
+
+      console.log("📤 CHAT: Custom fetch injecting body:", enhancedBody);
+
+      // Create new request with enhanced body
+      return fetch(input, {
+        ...init,
+        body: JSON.stringify(enhancedBody),
+        headers: {
+          ...init?.headers,
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    [botId]
+  );
+
   const chatHelpers = useChat({
     api: "/api/chat",
     maxSteps: 5, // Must match server-side maxSteps for AI SDK v4
     body: {
       botId,
-      enableMCP: enableMCP,
-      enableSimulation: enableSimulation,
+      chatId: chatIdRef.current,
+      enableArxiv,
+      enableSimulation,
     },
+    fetch: customFetch,
     onFinish: async (message) => {
-      console.log("🎯 CHAT COMPONENT: onFinish called", { message });
+      // Message finished, saving to database
       const finishedChatId = chatIdRef.current;
       if (finishedChatId) {
         // Cast to unknown first to access parts safely
@@ -61,6 +96,34 @@ export default function Chat({
           content?: string;
           role: string;
         };
+
+        console.log("💾 CHAT: onFinish called, saving message", {
+          hasParts: Array.isArray(msg.parts),
+          partsCount: Array.isArray(msg.parts) ? msg.parts.length : 0,
+          partTypes: Array.isArray(msg.parts)
+            ? msg.parts.map((p: any) => ({
+                type: p.type,
+                toolName: p.toolName,
+              }))
+            : [],
+          messageKeys: Object.keys(message),
+          hasToolInvocations: !!(message as any).toolInvocations,
+          toolInvocationsCount: (message as any).toolInvocations?.length || 0,
+        });
+
+        // Log tool invocations if present (AI SDK v4 format)
+        if ((message as any).toolInvocations) {
+          console.log(
+            "🔧 CHAT: Tool invocations found:",
+            (message as any).toolInvocations
+          );
+        }
+
+        // Log full message object to see what's available
+        console.log("💾 CHAT: Full message object:", {
+          ...message,
+          _fullObject: message,
+        });
 
         // Extract text content
         let text = "";
@@ -84,6 +147,11 @@ export default function Chat({
           payload.parts = msg.parts;
         }
 
+        console.log("💾 CHAT: Saving payload with parts:", {
+          hasPartsInPayload: !!payload.parts,
+          partsCount: payload.parts?.length || 0,
+        });
+
         await fetch("/api/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -96,10 +164,7 @@ export default function Chat({
   // Destructure the properties we need
   const { messages, isLoading, setMessages, append } = chatHelpers;
 
-  // Debug: Log loading state changes
-  useEffect(() => {
-    console.log("🔄 CHAT LOADING STATE:", isLoading);
-  }, [isLoading]);
+  // Loading state tracked for UI updates
 
   // Create rerun callback for simulations
   const handleRerunSimulation = useMemo(
@@ -131,7 +196,7 @@ export default function Chat({
       await append({
         role: "user",
         content: message,
-        
+
         parts: messageParts,
       });
     },
@@ -150,22 +215,62 @@ export default function Chat({
   >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Track if we've loaded messages for this chat to prevent re-loading
+  const loadedChatIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     (async () => {
-      if (!chatId) return;
+      // If chatId changed, clear messages first and reset loaded chat
+      if (
+        loadedChatIdRef.current !== null &&
+        loadedChatIdRef.current !== chatId
+      ) {
+        setMessages([]);
+        loadedChatIdRef.current = null;
+      }
+
+      if (!chatId) {
+        // No chat selected - clear messages
+        setMessages([]);
+        loadedChatIdRef.current = null;
+        return;
+      }
+
+      // Only load messages once per chat
+      if (loadedChatIdRef.current === chatId) return;
+
       const res = await fetch(`/api/messages?chatId=${chatId}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        // If fetch fails, mark as loaded anyway to prevent retries
+        loadedChatIdRef.current = chatId;
+        return;
+      }
+
       const data = (await res.json()) as {
-        messages: { role: Message["role"]; content: string }[];
+        messages: {
+          role: Message["role"];
+          content: string;
+          parts?: unknown[];
+        }[];
       };
+
+      console.log("📥 CHAT: Loading messages from database", {
+        count: data.messages.length,
+        messagesWithParts: data.messages.filter((m) => m.parts).length,
+      });
+
+      // Update messages (even if empty - clears old messages for new chats)
       setMessages(
         data.messages.map((m, i) => ({
           id: String(i),
           role: m.role,
           content: m.content,
-          parts: [{ type: "text", text: m.content }],
+          // Use parts from database if available, otherwise create text part
+          parts: m.parts || [{ type: "text", text: m.content }],
         })) as Message[]
       );
+
+      loadedChatIdRef.current = chatId;
     })();
   }, [chatId, setMessages]);
 
@@ -192,6 +297,36 @@ export default function Chat({
                   part.type.includes("simulate"))
               );
             });
+
+            // Debug: Log all assistant messages with their parts
+            if (m.role === "assistant") {
+              console.log("📨 CHAT: Assistant message received", {
+                messageId: m.id,
+                hasSimulation,
+                partsCount: (parts as unknown[]).length,
+                partTypes: (parts as unknown[]).map((p: unknown) => {
+                  const part = p as { type?: string; toolName?: string };
+                  return { type: part.type, toolName: part.toolName };
+                }),
+                fullParts: parts,
+              });
+
+              // Log detailed structure of each part for debugging
+              (parts as unknown[]).forEach((p: unknown, idx: number) => {
+                const part = p as any;
+                console.log(`   Part ${idx}:`, {
+                  type: part.type,
+                  keys: Object.keys(part),
+                  toolName: part.toolName,
+                  toolCallId: part.toolCallId,
+                  hasResult: !!part.result,
+                  hasOutput: !!part.output,
+                  hasArgs: !!part.args,
+                  hasInput: !!part.input,
+                  full: part,
+                });
+              });
+            }
 
             return (
               <div
@@ -223,37 +358,6 @@ export default function Chat({
                         : typeof msg.content === "string"
                         ? [{ type: "text", text: msg.content }]
                         : [];
-
-                      // Debug: Log all parts for assistant messages
-                      if (m.role === "assistant") {
-                        console.log("🔍 CHAT: Assistant message structure", {
-                          messageId: m.id,
-                          hasParts: Array.isArray(msg.parts),
-                          hasContent: !!msg.content,
-                          partsCount: parts.length,
-                          rawMessage: {
-                            parts: msg.parts,
-                            content:
-                              typeof msg.content === "string"
-                                ? msg.content.substring(0, 100)
-                                : msg.content,
-                          },
-                          parts: parts.map((p: unknown) => {
-                            const part = p as {
-                              type?: string;
-                              toolName?: string;
-                              toolCallId?: string;
-                              result?: unknown;
-                            };
-                            return {
-                              type: part.type,
-                              toolName: part.toolName,
-                              toolCallId: part.toolCallId,
-                              hasResult: !!part.result,
-                            };
-                          }),
-                        });
-                      }
 
                       // FIRST PASS: Collect tool call data to make rendering decisions
                       // Handle both old format (tool-call) and new format (tool-{toolName})
@@ -617,35 +721,34 @@ export default function Chat({
             );
           })}
           {/* Loading indicator when AI is thinking - only show if no assistant message yet */}
-          {isLoading &&
-            !messages.some((m) => m.role === "assistant") && (
-              <div className="flex gap-4 px-4 py-6">
-                <div className="size-8 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary">AI</span>
-                </div>
-                <div className="flex-1 space-y-2 pt-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div
-                        className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      Thinking...
-                    </span>
+          {isLoading && !messages.some((m) => m.role === "assistant") && (
+            <div className="flex gap-4 px-4 py-6">
+              <div className="size-8 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-medium text-primary">AI</span>
+              </div>
+              <div className="flex-1 space-y-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div
+                      className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    ></div>
                   </div>
+                  <span className="text-sm text-muted-foreground">
+                    Thinking...
+                  </span>
                 </div>
               </div>
-            )}
+            </div>
+          )}
         </div>
       </div>
       <div className="border-t bg-background flex-shrink-0">
@@ -676,25 +779,39 @@ export default function Chat({
               router.replace(`/app/chat/${botId}?chat=${currentChatId}`);
             }
 
-            // Generate title if needed
+            // Generate title asynchronously (don't block message sending)
             if (shouldGenerateTitle) {
-              try {
-                const tRes = await fetch("/api/chats/title", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ botId, prompt: text }),
+              console.log("🏷️ CHAT: Generating title for chat", {
+                chatId: currentChatId,
+                prompt: text.slice(0, 50) + "...",
+              });
+              // Fire and forget - update title in background
+              fetch("/api/chats/title", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ botId, prompt: text }),
+              })
+                .then(async (tRes) => {
+                  if (tRes.ok) {
+                    const tData = (await tRes.json()) as { title: string };
+                    console.log("✅ CHAT: Title generated:", tData.title);
+                    // update saved chat title
+                    await fetch(`/api/chats/${currentChatId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ title: tData.title }),
+                    });
+                    router.refresh();
+                  } else {
+                    console.error(
+                      "❌ CHAT: Title generation failed:",
+                      tRes.status
+                    );
+                  }
+                })
+                .catch((err) => {
+                  console.error("❌ CHAT: Title generation error:", err);
                 });
-                if (tRes.ok) {
-                  const tData = (await tRes.json()) as { title: string };
-                  // update saved chat title
-                  await fetch(`/api/chats/${currentChatId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ title: tData.title }),
-                  });
-                  router.refresh();
-                }
-              } catch {}
             }
             const messageParts: Array<
               | { type: "text"; text: string }
@@ -799,22 +916,22 @@ export default function Chat({
           )}
           <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
             <BookOpen className="size-4 text-muted-foreground" />
-            <Label htmlFor="mcp-toggle" className="text-sm font-medium">
-              ArXiv MCP
+            <Label htmlFor="arxiv-toggle" className="text-sm font-medium">
+              Query ArXiv
             </Label>
             <Switch
-              id="mcp-toggle"
-              checked={enableMCP}
-              onCheckedChange={setEnableMCP}
+              id="arxiv-toggle"
+              checked={enableArxiv}
+              onCheckedChange={setEnableArxiv}
             />
             <span className="text-xs text-muted-foreground">
-              {enableMCP ? "Enabled" : "Disabled"}
+              {enableArxiv ? "Enabled" : "Disabled"}
             </span>
           </div>
           <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
             <FlaskConical className="size-4 text-muted-foreground" />
             <Label htmlFor="simulation-toggle" className="text-sm font-medium">
-              Simulation MCP
+              Build Simulation
             </Label>
             <Switch
               id="simulation-toggle"
