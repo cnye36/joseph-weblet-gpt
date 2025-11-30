@@ -1,0 +1,94 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Search } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from '@/components/ui/input';
+
+interface Bot {
+  id: string;
+  name: string;
+  description: string | null;
+  system: string | null;
+  avatar_url: string | null;
+}
+
+interface AppBotListProps {
+  bots: Bot[];
+}
+
+export default function AppBotList({ bots }: AppBotListProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredBots = bots.filter((bot) =>
+    bot.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ).sort((a, b) => {
+      // Sort by relevance: starts with > contains
+      const aStarts = a.name.toLowerCase().startsWith(searchQuery.toLowerCase());
+      const bStarts = b.name.toLowerCase().startsWith(searchQuery.toLowerCase());
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      return 0;
+  });
+
+  return (
+    <div className="space-y-8">
+      <div className="max-w-md mx-auto relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search Weblets..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 bg-white/50 backdrop-blur-sm border-neutral-200 focus:bg-white transition-colors"
+        />
+      </div>
+
+      {filteredBots.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+              No Weblets found matching "{searchQuery}"
+          </div>
+      )}
+
+      <div className="max-w-5xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredBots.map((b) => (
+          <Link
+            key={b.id}
+            href={`/app/chat/${b.id}`}
+            className="block group h-full"
+          >
+            <div className="relative rounded-xl p-[2px] bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400 transition-all duration-300 hover:scale-105 h-full">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm"></div>
+              <Card className="relative bg-white border-white/0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl h-full flex flex-col">
+                <CardContent className="p-6 space-y-3 flex-1 flex flex-col">
+                  <div className="flex items-center space-x-3">
+                    {b.avatar_url ? (
+                      <Image
+                        src={b.avatar_url}
+                        alt={`${b.name} avatar`}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                        {b.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="font-semibold text-lg text-neutral-900 flex-1">
+                      {b.name}
+                    </div>
+                  </div>
+                  <div className="text-sm text-neutral-600 line-clamp-3 leading-relaxed flex-1">
+                    {b.description || b.system}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { streamText } from 'ai';
+import { generateText } from 'ai';
 import { openrouter } from '@/lib/openrouter';
 import { bots, defaultBotId, type BotId } from '@/lib/bots';
 import { z } from 'zod';
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await streamText({
+  const { text: full } = await generateText({
     model: openrouter(bot.model),
     system: `You are a helpful assistant that generates short 3-4 word titles for chats. Return only the title, no punctuation.`,
     messages: [
@@ -70,8 +70,6 @@ export async function POST(req: Request) {
       },
     ],
   });
-
-  const full = await result.text;
   const title = full
     .trim()
     .replace(/[\n\r\.]+/g, "")

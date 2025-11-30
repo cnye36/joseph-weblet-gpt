@@ -4,9 +4,7 @@ import SignupForm from "./SignupForm";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
 
-export default async function SignupPage(props: {
-  searchParams: Promise<{ redirect?: string }>;
-}) {
+export default async function SignupPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Check, Copy } from "lucide-react";
@@ -14,16 +14,32 @@ interface CodeBlockProps {
 
 export default function CodeBlock({ code, language = "text", className = "" }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Check initial theme
+    const checkTheme = () => {
+      const isDarkMode = document.documentElement.classList.contains("dark");
+      setIsDark(isDarkMode);
+    };
+
+    checkTheme();
+
+    // Optional: Observe class changes on html element if theme switching is dynamic without reload
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  // Detect theme - you can enhance this with a theme context
-  const isDark = typeof window !== "undefined" && 
-    document.documentElement.classList.contains("dark");
 
   return (
     <div className={`relative group my-3 ${className}`}>
@@ -65,4 +81,3 @@ export default function CodeBlock({ code, language = "text", className = "" }: C
     </div>
   );
 }
-

@@ -43,13 +43,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             .map((s) => (s || "").trim().toLowerCase())
             .filter((s) => s.length > 0);
 
-          // Debug logging
-          console.log("Admin check:", {
-            userEmail: normalizedEmail,
-            adminEmails: envEmails,
-            isMatch: envEmails.includes(normalizedEmail),
-          });
-
           return envEmails.includes(normalizedEmail);
         };
 
@@ -64,8 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
         if (userIsAdmin) {
-          // Admins have full access, no subscription required
-          console.log("User is admin - bypassing subscription check");
+          
           setShowModal(false);
           setIsChecking(false);
           return;

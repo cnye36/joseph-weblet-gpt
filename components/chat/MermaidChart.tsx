@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import mermaid from "mermaid";
 import { Expand, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,16 +11,21 @@ interface MermaidChartProps {
   className?: string;
 }
 
-export default function MermaidChart({ chart, className = "" }: MermaidChartProps) {
+function MermaidChart({ chart, className = "" }: MermaidChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chartTitle, setChartTitle] = useState("Mermaid Chart");
   const renderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastLoggedErrorRef = useRef<string | null>(null);
+  const lastRenderedChartRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Prevent re-rendering if chart content hasn't changed
+    if (lastRenderedChartRef.current === chart) {
+      return;
+    }
+
     if (renderTimeoutRef.current) {
       clearTimeout(renderTimeoutRef.current);
       renderTimeoutRef.current = null;
@@ -36,7 +41,9 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
       }
 
       let cleanChart = chart.trim();
-      setSvgContent("");
+      
+      // Don't clear content immediately to prevent flashing
+      // setSvgContent(""); 
       setError(null);
 
       // Normalize first line for other diagram types when AI keeps directives inline
@@ -112,9 +119,6 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
 
               // CRITICAL VALIDATION: Skip if no data after colon
               if (!taskData || taskData.length === 0) {
-                console.warn(
-                  `⚠️ Skipping invalid task line (no data after colon): "${line}"`
-                );
                 continue;
               }
 
@@ -140,10 +144,6 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
 
               // Validate we have at least 3 parts: id, date/after, duration
               if (parts.length < 3) {
-                console.warn(
-                  `⚠️ Skipping invalid task line (not enough parts): "${line}"`
-                );
-                console.warn(`   Parts found: [${parts.join(", ")}]`);
                 continue;
               }
 
@@ -157,9 +157,6 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
 
               // Validate task ID exists
               if (!parts[0] || parts[0].length === 0) {
-                console.warn(
-                  `⚠️ Skipping invalid task line (no task ID): "${line}"`
-                );
                 continue;
               }
 
@@ -179,10 +176,11 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
         if (
           !cleanChart.includes("gantt") &&
           !cleanChart.includes("flowchart") &&
-          !cleanChart.includes("graph")
+          !cleanChart.includes("graph") &&
+          !cleanChart.includes("sequenceDiagram")
         ) {
           setError(
-            "Invalid Mermaid diagram type. Chart must start with 'gantt', 'flowchart', or 'graph'"
+            "Invalid Mermaid diagram type. Chart must start with 'gantt', 'flowchart', 'graph', or 'sequenceDiagram'"
           );
           return;
         }
@@ -194,6 +192,16 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
           securityLevel: "loose",
           fontFamily: "inherit",
           logLevel: "error",
+          flowchart: {
+            htmlLabels: true,
+            curve: "basis",
+            nodeSpacing: 50,
+            rankSpacing: 50,
+            padding: 15,
+            useMaxWidth: false,
+            defaultRenderer: "dagre-wrapper",
+            wrappingWidth: 200,
+          },
           themeVariables: {
             primaryColor: "#6366f1",
             primaryTextColor: "#fff",
@@ -220,6 +228,7 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
         const { svg } = await mermaid.render(id, cleanChart);
         setSvgContent(svg);
         setError(null);
+        lastRenderedChartRef.current = chart;
 
         // Extract title from chart if available
         const titleMatch = cleanChart.match(/title\s+(.+)/);
@@ -227,17 +236,6 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
           setChartTitle(titleMatch[1].trim());
         }
       } catch (err) {
-        const serializedError =
-          err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-
-        if (lastLoggedErrorRef.current !== `${serializedError}|${cleanChart}`) {
-          lastLoggedErrorRef.current = `${serializedError}|${cleanChart}`;
-          console.warn("⚠️ Mermaid rendering error:", serializedError);
-          if (process.env.NODE_ENV !== "production") {
-            console.info("Chart content that failed:", cleanChart);
-          }
-        }
-
         // Extract more detailed error information
         let errorMessage = "Failed to render chart";
         if (err instanceof Error) {
@@ -375,3 +373,4 @@ export default function MermaidChart({ chart, className = "" }: MermaidChartProp
   );
 }
 
+export default memo(MermaidChart);

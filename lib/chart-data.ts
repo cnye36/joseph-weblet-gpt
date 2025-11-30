@@ -62,7 +62,7 @@ const flowchartChartSchema = z.object({
   edges: z.array(flowchartEdgeSchema).min(1),
 });
 
-const chartSchema = z.discriminatedUnion("type", [
+export const chartSchema = z.discriminatedUnion("type", [
   ganttChartSchema,
   flowchartChartSchema,
 ]);
@@ -146,10 +146,34 @@ const buildGanttChart = (chart: z.infer<typeof ganttChartSchema>) => {
 const buildFlowchart = (chart: z.infer<typeof flowchartChartSchema>) => {
   const lines: string[] = [];
   lines.push(`flowchart ${chart.direction}`);
+  
+  // Helper function to add line breaks to long labels
+  const formatLabel = (label: string): string => {
+    if (label.length <= 20) return label;
+    
+    // Split on spaces and add <br/> when line gets too long
+    const words = label.split(' ');
+    const formattedLines: string[] = [];
+    let currentLine = '';
+    
+    words.forEach(word => {
+      if (currentLine.length + word.length + 1 <= 20) {
+        currentLine += (currentLine ? ' ' : '') + word;
+      } else {
+        if (currentLine) formattedLines.push(currentLine);
+        currentLine = word;
+      }
+    });
+    
+    if (currentLine) formattedLines.push(currentLine);
+    return formattedLines.join('<br/>');
+  };
+  
   chart.nodes.forEach((node) => {
     const id = sanitizeId(node.id);
+    const formattedLabel = formatLabel(node.label);
     const renderer = shapeMap[node.shape] || shapeMap.rect;
-    lines.push(`    ${renderer(id, node.label)}`);
+    lines.push(`    ${renderer(id, formattedLabel)}`);
   });
   chart.edges.forEach((edge) => {
     const from = sanitizeId(edge.from);
