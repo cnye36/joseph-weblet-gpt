@@ -29,11 +29,18 @@ interface ChartToolRendererProps {
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-export default function ChartToolRenderer({ config }: ChartToolRendererProps) {
+function ChartToolRenderer({ config }: ChartToolRendererProps) {
   const { type, title, description, data, xKey, yKeys } = config;
 
+  // Memoize the mermaid string generation to prevent re-renders
+  const mermaidString = React.useMemo(() => {
+    if (type === "flowchart" || type === "gantt") {
+      return generateMermaidString(config);
+    }
+    return "";
+  }, [type, config]);
+
   if (type === "flowchart" || type === "gantt") {
-    const mermaidString = generateMermaidString(config);
     return (
       <Card className="w-full my-4">
         <CardHeader>
@@ -176,3 +183,5 @@ export default function ChartToolRenderer({ config }: ChartToolRendererProps) {
     </Card>
   );
 }
+
+export default React.memo(ChartToolRenderer);

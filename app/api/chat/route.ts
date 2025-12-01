@@ -83,11 +83,73 @@ export async function POST(req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tools: Record<string, any> = {
       generate_chart: tool({
-        description:
-          "Generate a chart or diagram. Supports quantitative charts (line, bar, pie, area) and diagrams (flowchart, gantt). Use this tool to visualize data or processes. IMPORTANT: When using this tool, do NOT output the chart code in markdown/text. Only use the tool.",
+        description: `Generate a chart or diagram. 
+
+CRITICAL: You MUST include all required fields based on chart type.
+
+For LINE/BAR/PIE/AREA charts, you MUST include:
+- type: the chart type
+- title: chart title
+- data: an array of data objects (REQUIRED - do not omit!)
+- xKey: the property name for x-axis values
+- yKeys: array of property names for y-axis values
+
+Example for line chart:
+{
+  "type": "line",
+  "title": "Sales Over Time",
+  "data": [
+    {"month": "Jan", "sales": 100},
+    {"month": "Feb", "sales": 150},
+    {"month": "Mar", "sales": 200}
+  ],
+  "xKey": "month",
+  "yKeys": ["sales"]
+}
+
+For FLOWCHART, you MUST include:
+- type: "flowchart"
+- title: chart title
+- nodes: array of {id, label, shape?}
+- edges: array of {from, to, label?}
+- direction: "TD" | "LR" | "BT" | "RL"
+
+For GANTT, you MUST include:
+- type: "gantt"
+- title: chart title
+- tasks: array of {id, label, start?, end?, duration?, dependsOn?}`,
         parameters: chartToolSchema,
         execute: async (chartData) => {
-          console.log("Executing chart generation tool:", chartData.type);
+          console.log("=== CHART TOOL EXECUTION ===");
+          console.log("Chart Type:", chartData.type);
+          console.log("Chart Title:", chartData.title);
+          console.log("Full Chart Data:", JSON.stringify(chartData, null, 2));
+          
+          // Check for common issues
+          if (chartData.type === "line" || chartData.type === "bar" || chartData.type === "pie" || chartData.type === "area") {
+            console.log("Quantitative chart detected");
+            console.log("Data array:", chartData.data);
+            console.log("Data length:", chartData.data?.length || 0);
+            console.log("xKey:", chartData.xKey);
+            console.log("yKeys:", chartData.yKeys);
+            
+            // Validate required fields
+            if (!chartData.data || chartData.data.length === 0) {
+              console.error("ERROR: No data array provided for quantitative chart!");
+            }
+          }
+          
+          if (chartData.type === "flowchart") {
+            console.log("Flowchart detected");
+            console.log("Nodes:", chartData.nodes);
+            console.log("Edges:", chartData.edges);
+          }
+          
+          if (chartData.type === "gantt") {
+            console.log("Gantt chart detected");
+            console.log("Tasks:", chartData.tasks);
+          }
+          
           return chartData;
         },
       }),
@@ -139,8 +201,17 @@ export async function POST(req: Request) {
     return result.toDataStreamResponse({
       getErrorMessage: (error) => {
         console.error("Stream error:", error);
-        if (error instanceof Error) return error.message;
-        return JSON.stringify(error);
+        if (error instanceof Error) {
+          if (error.message.includes("No endpoints found that support tool use")) {
+            return "The selected model does not support tools (charts/simulations). Please disable simulation mode or select a different model.";
+          }
+          return error.message;
+        }
+        const errorString = JSON.stringify(error);
+        if (errorString.includes("No endpoints found that support tool use")) {
+          return "The selected model does not support tools (charts/simulations). Please disable simulation mode or select a different model.";
+        }
+        return errorString;
       },
     });
   } catch (error) {

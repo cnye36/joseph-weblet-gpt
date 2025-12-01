@@ -11,8 +11,13 @@ export function generateMermaidString(config: ChartToolConfig): string {
       config.nodes.forEach(node => {
         const id = sanitizeId(node.id);
         const labelText = node.label || node.id;
-        // Escape quotes and wrap in quotes to handle special characters
-        const label = labelText.replace(/"/g, "'");
+        
+        // For Mermaid, we need to:
+        // 1. Keep the label text readable
+        // 2. Escape quotes properly
+        // 3. Use quotes to wrap the label for multi-word support
+        // Strategy: Replace double quotes with single quotes, keep everything else
+        const cleanLabel = labelText.replace(/"/g, "'");
         
         let shapeStart = "[";
         let shapeEnd = "]";
@@ -27,7 +32,8 @@ export function generateMermaidString(config: ChartToolConfig): string {
           default: break;
         }
         
-        mermaid += `    ${id}${shapeStart}"${label}"${shapeEnd}\n`;
+        // Use quotes around label to support spaces and special characters
+        mermaid += `    ${id}${shapeStart}"${cleanLabel}"${shapeEnd}\n`;
       });
     }
     
@@ -35,10 +41,18 @@ export function generateMermaidString(config: ChartToolConfig): string {
       config.edges.forEach(edge => {
         const from = sanitizeId(edge.from);
         const to = sanitizeId(edge.to);
-        const label = edge.label ? `|"${edge.label}"|` : "";
-        mermaid += `    ${from} -->${label} ${to}\n`;
+        if (edge.label) {
+          const cleanLabel = edge.label.replace(/"/g, "'");
+          mermaid += `    ${from} -->|"${cleanLabel}"| ${to}\n`;
+        } else {
+          mermaid += `    ${from} --> ${to}\n`;
+        }
       });
     }
+    
+    console.log("=== GENERATED MERMAID STRING ===");
+    console.log(mermaid);
+    console.log("=================================");
     
     return mermaid;
   }

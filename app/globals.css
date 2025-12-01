@@ -155,9 +155,31 @@
   padding: 8px !important;
 }
 
-/* Ensure readable font size */
+/* Ensure readable font size and FORCE text color to be visible */
 .mermaid-chart text,
 .mermaid-chart-modal text {
   font-size: 14px !important;
+  fill: #1a1a1a !important; /* Force dark text */
+  color: #1a1a1a !important;
 }
 
+/* Force label text to be visible */
+.mermaid-chart .nodeLabel,
+.mermaid-chart-modal .nodeLabel,
+.mermaid-chart span,
+.mermaid-chart-modal span {
+  color: #1a1a1a !important;
+  fill: #1a1a1a !important;
+}
+
+/* Ensure edge labels are visible */
+.mermaid-chart .edgeLabel,
+.mermaid-chart-modal .edgeLabel {
+  background-color: white !important;
+  fill: #1a1a1a !important;
+}
+
+.mermaid-chart .edgeLabel text,
+.mermaid-chart-modal .edgeLabel text {
+  fill: #1a1a1a !important;
+}

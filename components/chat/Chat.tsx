@@ -67,6 +67,8 @@ export default function Chat({
     input,
     handleInputChange,
     setInput,
+    error,
+    reload,
   } = useChat({
     api: "/api/chat",
     body: {
@@ -400,6 +402,20 @@ export default function Chat({
               Run Simulation
             </Label>
           </div>
+
+          {error && (
+            <div className="mb-2 p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-between gap-2">
+              <span>{error.message}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => reload()}
+                className="h-7 text-xs border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
 
           <form
             ref={formRef}

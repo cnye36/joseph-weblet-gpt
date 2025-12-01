@@ -21,11 +21,6 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
   const lastRenderedChartRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Prevent re-rendering if chart content hasn't changed
-    if (lastRenderedChartRef.current === chart) {
-      return;
-    }
-
     if (renderTimeoutRef.current) {
       clearTimeout(renderTimeoutRef.current);
       renderTimeoutRef.current = null;
@@ -41,10 +36,12 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
       }
 
       let cleanChart = chart.trim();
-      
-      // Don't clear content immediately to prevent flashing
-      // setSvgContent(""); 
       setError(null);
+
+      console.log("=== MERMAID CHART RENDERING ===");
+      console.log("Original chart prop:", chart);
+      console.log("Clean chart:", cleanChart);
+      console.log("================================");
 
       // Normalize first line for other diagram types when AI keeps directives inline
       cleanChart = cleanChart.replace(
@@ -64,7 +61,6 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
       if (cleanChart.includes("gantt")) {
         try {
           // Step 1: Fix broken first line (gantt + title on same line)
-          // "gantt title Project..." -> "gantt\n    title Project..."
           cleanChart = cleanChart.replace(
             /^gantt\s+title\s+/i,
             "gantt\n    title "
@@ -83,31 +79,23 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
             const line = rawLine.trim();
             if (!line) continue;
 
-            // Keep gantt keyword
             if (line.toLowerCase() === "gantt") {
               rebuilt.push("gantt");
               continue;
             }
-
-            // Keep title
             if (line.startsWith("title ")) {
               rebuilt.push("    " + line);
               continue;
             }
-
-            // Keep dateFormat
             if (line.startsWith("dateFormat ")) {
               rebuilt.push("    " + line);
               continue;
             }
-
-            // Keep section
             if (line.startsWith("section ")) {
               rebuilt.push("    " + line);
               continue;
             }
 
-            // Handle task lines (contain a colon)
             if (
               line.includes(":") &&
               !line.startsWith("title") &&
@@ -117,63 +105,35 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
               const taskName = line.substring(0, colonIdx).trim();
               let taskData = line.substring(colonIdx + 1).trim();
 
-              // CRITICAL VALIDATION: Skip if no data after colon
-              if (!taskData || taskData.length === 0) {
-                continue;
-              }
+              if (!taskData || taskData.length === 0) continue;
 
-              // CRITICAL: Remove everything after duration
-              // Match: "lit, 2025-10-01, 13d Literature" -> "lit, 2025-10-01, 13d"
               taskData = taskData.replace(/^(.*?\d+[dhm])\s+.*$/, "$1");
-
-              // Also handle "after" syntax
-              // Match: "hypo, after lit, 6d Hypothesis" -> "hypo, after lit, 6d"
               taskData = taskData.replace(
                 /^(.*?after\s+\w+,\s*\d+[dhm])\s+.*$/,
                 "$1"
               );
-
-              // Fix missing commas after task ID
-              // "lit 2025-10-01" -> "lit, 2025-10-01"
-              // "review 2026-01-16" -> "review, 2026-01-16"
               taskData = taskData.replace(/^([a-z]+)\s+(\d{4}-)/i, "$1, $2");
               taskData = taskData.replace(/^([a-z]+)\s+(after\s)/i, "$1, $2");
 
-              // Normalize task IDs to lowercase
               const parts = taskData.split(",").map((p) => p.trim());
+              if (parts.length < 3) continue;
 
-              // Validate we have at least 3 parts: id, date/after, duration
-              if (parts.length < 3) {
-                continue;
-              }
-
-              // Fix task ID (first part)
-              if (
-                parts[0] &&
-                !/^(done|active|crit|milestone)$/i.test(parts[0])
-              ) {
+              if (parts[0] && !/^(done|active|crit|milestone)$/i.test(parts[0])) {
                 parts[0] = parts[0].toLowerCase().replace(/[^a-z0-9]/g, "");
               }
 
-              // Validate task ID exists
-              if (!parts[0] || parts[0].length === 0) {
-                continue;
-              }
+              if (!parts[0] || parts[0].length === 0) continue;
 
               rebuilt.push(`    ${taskName}    :${parts.join(", ")}`);
               continue;
             }
           }
-
           cleanChart = rebuilt.join("\n");
         } catch (fixError) {
           console.error("Auto-fix error:", fixError);
         }
       }
 
-      // Detect current theme
-      const isDark = document.documentElement.classList.contains("dark");
-      
       try {
         // Basic validation
         if (
@@ -188,24 +148,45 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
           return;
         }
 
-        // Initialize mermaid with configuration
-        // We use "default" theme and rely on CSS variables for colors
-        // This avoids complex injection and ensures consistency
+        // Initialize mermaid with 'default' theme for colorful, high-contrast charts
+        // This ensures text is always visible and charts look professional
         mermaid.initialize({
           startOnLoad: false,
-          theme: "default", 
+          theme: "default", // Use Mermaid's default theme - colorful and clear
+          themeVariables: {
+            // Customize colors while keeping good contrast
+            primaryColor: "#e3f2fd",
+            primaryTextColor: "#1a1a1a",
+            primaryBorderColor: "#1976d2",
+            secondaryColor: "#fff3e0",
+            secondaryTextColor: "#1a1a1a",
+            secondaryBorderColor: "#f57c00",
+            tertiaryColor: "#f3e5f5",
+            tertiaryTextColor: "#1a1a1a",
+            tertiaryBorderColor: "#7b1fa2",
+            lineColor: "#455a64",
+            textColor: "#1a1a1a",
+            mainBkg: "#ffffff",
+            nodeBorder: "#1976d2",
+            clusterBkg: "#f5f5f5",
+            clusterBorder: "#9e9e9e",
+            defaultLinkColor: "#455a64",
+            edgeLabelBackground: "#ffffff",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontSize: "14px",
+          },
           securityLevel: "loose",
-          fontFamily: "inherit",
+          fontFamily: "system-ui, -apple-system, sans-serif",
           logLevel: "error",
           flowchart: {
             htmlLabels: true,
             curve: "basis",
-            nodeSpacing: 30,
-            rankSpacing: 30,
-            padding: 10,
-            useMaxWidth: true, // Allow it to scale
+            nodeSpacing: 50,
+            rankSpacing: 50,
+            padding: 15,
+            useMaxWidth: true,
             defaultRenderer: "dagre-wrapper",
-            wrappingWidth: 150,
+            wrappingWidth: 200,
           },
           gantt: {
             barHeight: 20,
@@ -217,30 +198,21 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
           }
         });
 
-        // Generate unique ID for this chart
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-
-        // Perform a dry-run parse to surface syntax errors without spamming console
         await mermaid.parse(cleanChart);
-
-        // Render the chart
         const { svg } = await mermaid.render(id, cleanChart);
         setSvgContent(svg);
         setError(null);
         lastRenderedChartRef.current = chart;
 
-        // Extract title from chart if available
         const titleMatch = cleanChart.match(/title\s+(.+)/);
         if (titleMatch) {
           setChartTitle(titleMatch[1].trim());
         }
       } catch (err) {
-        // Extract more detailed error information
         let errorMessage = "Failed to render chart";
         if (err instanceof Error) {
           errorMessage = err.message;
-
-          // Try to extract more specific error details
           if (err.message.includes("Parse error")) {
             errorMessage = `Syntax Error: ${err.message}\n\n⚠️ COMMON ISSUE: Extra text after task duration\nEach task must be on its OWN line with format:\nTask Name    :id, date, duration\n\nNOTHING can come after the duration!`;
           } else if (err.message.includes("Invalid date")) {
@@ -249,12 +221,10 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
             errorMessage = `Diagram Type Error: Chart must start with 'gantt', 'flowchart TD', or similar`;
           }
         }
-
         setError(errorMessage);
       }
     };
 
-    // Small delay to ensure DOM is ready
     renderTimeoutRef.current = setTimeout(() => {
       renderChart();
       renderTimeoutRef.current = null;
@@ -284,26 +254,6 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
           <pre className="text-xs bg-muted p-3 rounded mt-2 overflow-x-auto border">
             {chart}
           </pre>
-          <div className="mt-3 text-xs text-muted-foreground space-y-1">
-            <p className="font-semibold">Common fixes:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>
-                Ensure dateFormat is:{" "}
-                <code className="bg-muted px-1 py-0.5 rounded">
-                  dateFormat YYYY-MM-DD
-                </code>
-              </li>
-              <li>
-                Task format:{" "}
-                <code className="bg-muted px-1 py-0.5 rounded">
-                  Task Name :id, 2025-01-01, 30d
-                </code>
-              </li>
-              <li>Task IDs must be lowercase letters only</li>
-              <li>Dates must be YYYY-MM-DD format</li>
-              <li>Use 4 spaces for indentation</li>
-            </ul>
-          </div>
         </details>
       </div>
     );
@@ -323,15 +273,13 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
 
   return (
     <>
-      <div className="relative group my-4 w-full">
+      <div className="relative group my-4 w-full flex justify-center">
         <div
           ref={containerRef}
           // Responsive container:
-          // - w-full: Use full width
-          // - max-h-[500px]: Limit height for inline view
-          // - overflow-auto: Scroll if content is too big
-          // - flex justify-center: Center the chart
-          className={`mermaid-chart p-4 bg-muted/30 rounded-lg border overflow-auto cursor-pointer hover:bg-muted/40 transition-colors flex justify-center items-center w-full max-h-[500px] ${className}`}
+          // - w-auto inline-block: Size to content, don't stretch
+          // - max-w-full: Prevent overflow
+          className={`mermaid-chart p-4 bg-white rounded-lg border border-slate-200 overflow-auto cursor-pointer hover:shadow-md transition-all flex justify-center items-center w-auto inline-block max-w-full max-h-[500px] ${className}`}
           dangerouslySetInnerHTML={{ __html: svgContent }}
           onClick={() => setIsModalOpen(true)}
         />
@@ -370,7 +318,8 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
         onDownload={downloadChart}
       >
         <div
-          className="mermaid-chart-modal flex items-center justify-center"
+          // Constrain modal content width
+          className="mermaid-chart-modal flex items-center justify-center w-full min-h-[50vh] p-8 bg-white rounded-lg [&_svg]:max-w-[85%] [&_svg]:h-auto [&_svg]:w-auto"
           dangerouslySetInnerHTML={{ __html: svgContent }}
         />
       </ChartModal>
