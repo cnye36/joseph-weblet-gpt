@@ -28,17 +28,7 @@ export async function isAdmin(): Promise<boolean> {
     .split(",")
     .map((s) => (s || "").trim().toLowerCase())
     .filter((s) => s.length > 0);
-
-  console.log("Server-side admin check:", {
-    email,
-    envEmails,
-    isMatch: email ? envEmails.includes(email) : false,
-  });
-
-  if (email && envEmails.includes(email)) {
-    console.log("User is admin (from env vars)");
-    return true;
-  }
+  
 
   // Check admin database
   const { data } = await supabase
@@ -48,14 +38,10 @@ export async function isAdmin(): Promise<boolean> {
     .maybeSingle();
 
   const isAdminFromDB = Boolean(data);
-  console.log("Server-side admin check result:", {
-    email,
-    isAdminFromEnv: email ? envEmails.includes(email) : false,
-    isAdminFromDB,
-    isAdmin: isAdminFromDB,
-  });
 
-  return isAdminFromDB;
+  const isAdminFromEnv = !!email && envEmails.includes(email);
+
+  return isAdminFromDB || isAdminFromEnv;
 }
 
 

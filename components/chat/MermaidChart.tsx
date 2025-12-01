@@ -171,6 +171,9 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
         }
       }
 
+      // Detect current theme
+      const isDark = document.documentElement.classList.contains("dark");
+      
       try {
         // Basic validation
         if (
@@ -186,36 +189,32 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
         }
 
         // Initialize mermaid with configuration
+        // We use "default" theme and rely on CSS variables for colors
+        // This avoids complex injection and ensures consistency
         mermaid.initialize({
           startOnLoad: false,
-          theme: "default",
+          theme: "default", 
           securityLevel: "loose",
           fontFamily: "inherit",
           logLevel: "error",
           flowchart: {
             htmlLabels: true,
             curve: "basis",
-            nodeSpacing: 50,
-            rankSpacing: 50,
-            padding: 15,
-            useMaxWidth: false,
+            nodeSpacing: 30,
+            rankSpacing: 30,
+            padding: 10,
+            useMaxWidth: true, // Allow it to scale
             defaultRenderer: "dagre-wrapper",
-            wrappingWidth: 200,
+            wrappingWidth: 150,
           },
-          themeVariables: {
-            primaryColor: "#6366f1",
-            primaryTextColor: "#fff",
-            primaryBorderColor: "#4f46e5",
-            lineColor: "#6366f1",
-            secondaryColor: "#8b5cf6",
-            tertiaryColor: "#ec4899",
-            background: "#ffffff",
-            mainBkg: "#f3f4f6",
-            secondBkg: "#e5e7eb",
-            textColor: "#1f2937",
-            border1: "#d1d5db",
-            border2: "#9ca3af",
-          },
+          gantt: {
+            barHeight: 20,
+            fontSize: 11,
+            sectionFontSize: 11,
+            numberSectionStyles: 3,
+            axisFormat: "%Y-%m-%d",
+            topPadding: 50
+          }
         });
 
         // Generate unique ID for this chart
@@ -255,10 +254,11 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
       }
     };
 
+    // Small delay to ensure DOM is ready
     renderTimeoutRef.current = setTimeout(() => {
       renderChart();
       renderTimeoutRef.current = null;
-    }, 350);
+    }, 100);
 
     return () => {
       if (renderTimeoutRef.current) {
@@ -323,10 +323,15 @@ function MermaidChart({ chart, className = "" }: MermaidChartProps) {
 
   return (
     <>
-      <div className="relative group my-4">
+      <div className="relative group my-4 w-full">
         <div
           ref={containerRef}
-          className={`mermaid-chart p-4 bg-muted/30 rounded-lg border overflow-x-auto cursor-pointer hover:bg-muted/40 transition-colors ${className}`}
+          // Responsive container:
+          // - w-full: Use full width
+          // - max-h-[500px]: Limit height for inline view
+          // - overflow-auto: Scroll if content is too big
+          // - flex justify-center: Center the chart
+          className={`mermaid-chart p-4 bg-muted/30 rounded-lg border overflow-auto cursor-pointer hover:bg-muted/40 transition-colors flex justify-center items-center w-full max-h-[500px] ${className}`}
           dangerouslySetInnerHTML={{ __html: svgContent }}
           onClick={() => setIsModalOpen(true)}
         />

@@ -3,65 +3,49 @@
 import { z } from "zod";
 
 const ganttTaskSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
+  id: z.string(),
+  label: z.string(),
   start: z.string().optional(),
   end: z.string().optional(),
-  durationDays: z.number().int().positive().optional(),
+  durationDays: z.number().optional(),
   duration: z.string().optional(),
   dependsOn: z.array(z.string()).optional(),
-  status: z.enum(["active", "done", "crit"]).optional(),
+  status: z.string().optional(),
   milestone: z.boolean().optional(),
 });
 
 const ganttSectionSchema = z.object({
-  name: z.string().min(1),
-  tasks: z.array(ganttTaskSchema).min(1),
+  name: z.string(),
+  tasks: z.array(ganttTaskSchema),
 });
 
-const ganttChartSchema = z.object({
+export const ganttChartSchema = z.object({
   type: z.literal("gantt"),
-  title: z.string().default("Project Timeline"),
-  dateFormat: z.enum(["YYYY-MM-DD"]).default("YYYY-MM-DD"),
-  sections: z.array(ganttSectionSchema).min(1),
+  title: z.string().describe("Title of the chart"),
+  dateFormat: z.string().describe("Date format, always YYYY-MM-DD"),
+  sections: z.array(ganttSectionSchema),
 });
 
 const flowchartNodeSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  shape: z
-    .enum([
-      "rounded",
-      "stadium",
-      "subroutine",
-      "cylinder",
-      "circle",
-      "diamond",
-      "hexagon",
-      "parallelogram",
-      "parallelogram-alt",
-      "trapezoid",
-      "trapezoid-alt",
-      "doublecircle",
-      "doc",
-      "rect",
-    ])
-    .default("rect"),
+  id: z.string(),
+  label: z.string(),
+  shape: z.string().optional().describe("Shape of the node (default: rect)"),
 });
 
 const flowchartEdgeSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().min(1),
+  from: z.string(),
+  to: z.string(),
   label: z.string().optional(),
 });
 
-const flowchartChartSchema = z.object({
+export const flowchartChartSchema = z.object({
   type: z.literal("flowchart"),
-  direction: z.enum(["TD", "BT", "LR", "RL"]).default("TD"),
-  nodes: z.array(flowchartNodeSchema).min(2),
-  edges: z.array(flowchartEdgeSchema).min(1),
+  direction: z.string().describe("Direction (TD, BT, LR, RL)"),
+  nodes: z.array(flowchartNodeSchema),
+  edges: z.array(flowchartEdgeSchema),
 });
 
+// Use discriminatedUnion for better type safety and schema generation
 export const chartSchema = z.discriminatedUnion("type", [
   ganttChartSchema,
   flowchartChartSchema,
@@ -172,7 +156,7 @@ const buildFlowchart = (chart: z.infer<typeof flowchartChartSchema>) => {
   chart.nodes.forEach((node) => {
     const id = sanitizeId(node.id);
     const formattedLabel = formatLabel(node.label);
-    const renderer = shapeMap[node.shape] || shapeMap.rect;
+    const renderer = shapeMap[node.shape || "rect"] || shapeMap.rect;
     lines.push(`    ${renderer(id, formattedLabel)}`);
   });
   chart.edges.forEach((edge) => {

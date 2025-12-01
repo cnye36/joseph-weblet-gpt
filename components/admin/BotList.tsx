@@ -46,9 +46,9 @@ export default function BotList({ bots }: BotListProps) {
       </div>
 
       {filteredBots.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-              No bots found matching "{searchQuery}"
-          </div>
+        <div className="text-center py-8 text-muted-foreground">
+          No bots found matching &quot;{searchQuery}&quot;
+        </div>
       )}
 
       {filteredBots.map((b) => (

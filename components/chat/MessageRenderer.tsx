@@ -74,6 +74,8 @@ export default function MessageRenderer({
 
         // Check if it's a mermaid diagram
         if (language === "mermaid") {
+          // We still render it, but the system prompt should prevent this from happening often.
+          // This acts as a fallback for "legacy" or "rebellious" model outputs.
           return <MermaidChart chart={codeContent} />;
         }
 

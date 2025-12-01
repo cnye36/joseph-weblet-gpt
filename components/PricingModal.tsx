@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, ArrowRight, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 declare global {
@@ -23,8 +22,11 @@ interface PricingModalProps {
   required?: boolean;
 }
 
-export default function PricingModal({ open, onClose, required = false }: PricingModalProps) {
-  const router = useRouter();
+export default function PricingModal({
+  open,
+  onClose,
+  required = false,
+}: PricingModalProps) {
   const supabase = createClient();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 

@@ -44,7 +44,7 @@ export default function ChartModal({
       onClick={onClose}
     >
       <div
-        className="relative bg-background rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-hidden"
+        className="relative bg-background rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

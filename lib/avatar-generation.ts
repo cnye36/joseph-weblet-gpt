@@ -186,8 +186,9 @@ function extractThemes(
 
 /**
  * Upload avatar image to Supabase storage from a URL
- * @deprecated Use uploadAvatarToSupabaseFromBuffer instead
+ * @deprecated Use uploadAvatarToSupabaseFromBuffer instead - kept for backward compatibility
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function uploadAvatarToSupabase(
   imageUrl: string,
   botName: string

@@ -256,18 +256,21 @@ export function simulateLogistic(config: Extract<SimulationConfig, { model_type:
  * Projectile Motion Model Logic
  */
 const projectileDerivs: DerivativeFunction = (t, state, params) => {
-  const [x, y, vx, vy] = state;
+  // state: [x, y, vx, vy]
+  const [, , vx, vy] = state;
   const { g } = params;
-  
+
   const dx = vx;
   const dy = vy;
   const dvx = 0;
   const dvy = -g;
-  
+
   return [dx, dy, dvx, dvy];
 };
 
-export function simulateProjectile(config: Extract<SimulationConfig, { model_type: "Projectile" }>): SimulationResult {
+export function simulateProjectile(
+  config: Extract<SimulationConfig, { model_type: "Projectile" }>
+): SimulationResult {
   try {
     const { parameters, initial_conditions, time_span } = config;
     const { velocity, angle, g } = parameters;
@@ -297,7 +300,7 @@ export function simulateProjectile(config: Extract<SimulationConfig, { model_typ
     // Find max height and range
     let maxY = -Infinity;
     let range = 0;
-    data.forEach(p => {
+    data.forEach((p) => {
       if (p.y > maxY) maxY = p.y;
       if (p.y >= 0) range = p.x; // Approximate range where y >= 0
     });
@@ -305,7 +308,9 @@ export function simulateProjectile(config: Extract<SimulationConfig, { model_typ
     return {
       status: "success",
       message: "Simulation completed successfully",
-      summary: `Projectile reached max height of ${maxY.toFixed(2)}m and range of approx ${range.toFixed(2)}m.`,
+      summary: `Projectile reached max height of ${maxY.toFixed(
+        2
+      )}m and range of approx ${range.toFixed(2)}m.`,
       metrics: {
         max_height: maxY,
         range: range,
@@ -316,7 +321,10 @@ export function simulateProjectile(config: Extract<SimulationConfig, { model_typ
   } catch (error) {
     return {
       status: "error",
-      message: error instanceof Error ? error.message : "Unknown error in Projectile simulation",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unknown error in Projectile simulation",
       columns: [],
       data: [],
     };
@@ -337,7 +345,9 @@ export function runSimulation(config: SimulationConfig): SimulationResult {
     default:
       return {
         status: "error",
-        message: `Model type ${(config as any).model_type} not implemented yet.`,
+        message: `Model type ${
+          (config as { model_type: string }).model_type
+        } not implemented yet.`,
         columns: [],
         data: [],
       };

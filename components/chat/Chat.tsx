@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import MermaidChart from "./MermaidChart";
 import { buildMermaidFromChartData } from "@/lib/chart-data";
+import ChartToolRenderer from "./ChartToolRenderer";
+import { ChartToolConfig } from "@/lib/chart-schemas";
 
 export default function Chat({
   botId,
@@ -57,7 +59,15 @@ export default function Chat({
 
   const [enableSimulation, setEnableSimulation] = useState(false);
 
-  const { messages, isLoading, setMessages, append, input, handleInputChange, setInput } = useChat({
+  const {
+    messages,
+    isLoading,
+    setMessages,
+    append,
+    input,
+    handleInputChange,
+    setInput,
+  } = useChat({
     api: "/api/chat",
     body: {
       botId,
@@ -80,12 +90,19 @@ export default function Chat({
           text = msg.content;
         } else if (Array.isArray(msg.parts)) {
           text = msg.parts
-            .filter((p: any) => p.type === "text")
-            .map((p: any) => p.text)
+            .filter((p): p is { type: "text"; text: string } => 
+              typeof p === "object" && p !== null && "type" in p && p.type === "text"
+            )
+            .map((p) => p.text)
             .join("");
         }
 
-        const payload: any = {
+        const payload: {
+          chatId: string;
+          role: string;
+          content: string;
+          parts?: unknown[];
+        } = {
           chatId: finishedChatId,
           role: "assistant",
           content: text,
@@ -190,110 +207,126 @@ export default function Chat({
         <div className="max-w-3xl mx-auto space-y-6 pb-4">
           {messages.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 p-8">
-              <h2 className="text-3xl font-bold tracking-tight">Hello there!</h2>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Hello there!
+              </h2>
               <p className="text-muted-foreground text-lg">
                 How can I help you today?
               </p>
             </div>
           ) : (
-
-
             messages.map((m: Message) => {
-                const hasToolResult = m.parts?.some(
-                  (p: any) =>
+              const hasToolResult = m.parts?.some((p) => {
+                if (typeof p === "object" && p !== null && "type" in p) {
+                  return (
                     p.type === "tool-invocation" &&
-                    (p.toolInvocation.toolName === "simulate_model" || p.toolInvocation.toolName === "generate_chart")
-                );
+                    "toolInvocation" in p &&
+                    typeof p.toolInvocation === "object" &&
+                    p.toolInvocation !== null &&
+                    "toolName" in p.toolInvocation &&
+                    (p.toolInvocation.toolName === "simulate_model" ||
+                      p.toolInvocation.toolName === "generate_chart")
+                  );
+                }
+                return false;
+              });
 
-                return (
+              return (
+                <div
+                  key={m.id}
+                  className={`flex ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
                   <div
-                    key={m.id}
-                    className={`flex ${
-                      m.role === "user" ? "justify-end" : "justify-start"
+                    className={`space-y-1 rounded-lg ${
+                      m.role === "user"
+                        ? "bg-blue-600 text-white max-w-[80%] px-4 py-3"
+                        : `bg-muted px-4 py-3 ${
+                            hasToolResult ? "max-w-full w-full" : "max-w-[80%]"
+                          }`
                     }`}
                   >
-                    <div
-                      className={`space-y-1 rounded-lg ${
-                        m.role === "user"
-                          ? "bg-blue-600 text-white max-w-[80%] px-4 py-3"
-                          : `bg-muted px-4 py-3 ${
-                              hasToolResult ? "max-w-full w-full" : "max-w-[80%]"
-                            }`
-                      }`}
-                    >
-                      <div className="text-xs opacity-70 mb-1 capitalize">
-                        {m.role}
-                      </div>
-                      <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed break-words">
-                        <MessageRenderer content={m.content} />
-                        {m.parts?.map((part: any, idx: number) => {
-                          if (part.type === "tool-invocation") {
-                            const { toolName, toolCallId, state, args } =
-                              part.toolInvocation;
-                            
-                            if (toolName === "simulate_model") {
-                              // If we have a result, use it. If not, we might be loading or have args.
-                              // For 'result' state, the result is in part.toolInvocation.result
-                              const result = state === "result" ? part.toolInvocation.result : undefined;
-                              
-                              // If we have args (even if loading), we can try to render the initial state
-                              // But usually we wait for the result to have the full config confirmation
-                              // However, our SimulationRenderer needs config.
-                              // If state is 'result', result contains { ...simulationResult, config }
-                              
-                              if (state === "result" && result) {
-                                 return (
-                                   <div key={toolCallId} className="mt-4">
-                                     <SimulationRenderer 
-                                       initialConfig={result.config} 
-                                       initialResult={result} 
-                                     />
-                                   </div>
-                                 );
-                              }
-                              
-                              return (
-                                 <div key={toolCallId} className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-                                   <div className="size-3 rounded-full bg-primary/50 animate-pulse" />
-                                   Running simulation...
-                                 </div>
-                              );
-                            }
+                    <div className="text-xs opacity-70 mb-1 capitalize">
+                      {m.role}
+                    </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed break-words">
+                      <MessageRenderer content={m.content} />
+                      {m.parts?.map((part, idx) => {
+                        // Type guard for tool invocation parts
+                        if (
+                          typeof part === "object" &&
+                          part !== null &&
+                          "type" in part &&
+                          part.type === "tool-invocation" &&
+                          "toolInvocation" in part &&
+                          typeof part.toolInvocation === "object" &&
+                          part.toolInvocation !== null
+                        ) {
+                          const toolInv = part.toolInvocation as {
+                            toolName?: string;
+                            toolCallId?: string;
+                            state?: string;
+                            result?: Record<string, unknown>;
+                          };
 
-                            if (toolName === "generate_chart") {
-                              const result = state === "result" ? part.toolInvocation.result : undefined;
-                              
-                              if (state === "result" && result) {
-                                try {
-                                  const chartString = buildMermaidFromChartData(result);
-                                  return (
-                                    <div key={toolCallId} className="mt-4">
-                                      <MermaidChart chart={chartString} />
-                                    </div>
-                                  );
-                                } catch (e) {
-                                  return (
-                                    <div key={toolCallId} className="mt-4 text-destructive text-sm">
-                                      Error rendering chart: {e instanceof Error ? e.message : "Unknown error"}
-                                    </div>
-                                  );
-                                }
-                              }
+                          const { toolName, toolCallId, state } = toolInv;
 
+                          if (toolName === "simulate_model") {
+                            const result = state === "result" ? toolInv.result : undefined;
+
+                            if (state === "result" && result && "config" in result && "status" in result) {
                               return (
-                                <div key={toolCallId} className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-                                  <div className="size-3 rounded-full bg-primary/50 animate-pulse" />
-                                  Generating chart...
+                                <div key={toolCallId || idx} className="mt-4">
+                                  <SimulationRenderer
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    initialConfig={result.config as any}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    initialResult={result as any}
+                                  />
                                 </div>
                               );
                             }
+
+                            return (
+                              <div
+                                key={toolCallId || idx}
+                                className="mt-2 text-xs text-muted-foreground flex items-center gap-2"
+                              >
+                                <div className="size-3 rounded-full bg-primary/50 animate-pulse" />
+                                Running simulation...
+                              </div>
+                            );
                           }
-                          return null;
-                        })}
-                      </div>
+
+                          if (toolName === "generate_chart") {
+                            const result = state === "result" ? toolInv.result : undefined;
+
+                            if (state === "result" && result) {
+                              return (
+                                <div key={toolCallId || idx} className="mt-4">
+                                  <ChartToolRenderer config={result as ChartToolConfig} />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div
+                                key={toolCallId || idx}
+                                className="mt-2 text-xs text-muted-foreground flex items-center gap-2"
+                              >
+                                <div className="size-3 rounded-full bg-primary/50 animate-pulse" />
+                                Generating chart...
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })}
                     </div>
                   </div>
-                );
+                </div>
+              );
             })
           )}
           {isLoading && !messages.some((m) => m.role === "assistant") && (
@@ -353,14 +386,17 @@ export default function Chat({
               ))}
             </div>
           )}
-          
+
           <div className="flex items-center justify-end gap-2 mb-2 px-1">
             <Switch
               id="simulation-mode"
               checked={enableSimulation}
               onCheckedChange={setEnableSimulation}
             />
-            <Label htmlFor="simulation-mode" className="text-xs text-muted-foreground font-medium cursor-pointer">
+            <Label
+              htmlFor="simulation-mode"
+              className="text-xs text-muted-foreground font-medium cursor-pointer"
+            >
               Run Simulation
             </Label>
           </div>
@@ -370,7 +406,7 @@ export default function Chat({
             onSubmit={async (e) => {
               e.preventDefault();
               if (!input.trim() && attachments.length === 0) return;
-              
+
               let currentChatId = chatId;
               let shouldGenerateTitle = false;
 
@@ -395,21 +431,26 @@ export default function Chat({
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ botId, prompt: input }),
-                })
-                  .then(async (tRes) => {
-                    if (tRes.ok) {
-                      await fetch(`/api/chats/${currentChatId}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ title: (await tRes.json()).title }),
-                      });
-                      router.refresh();
-                    }
-                  });
+                }).then(async (tRes) => {
+                  if (tRes.ok) {
+                    await fetch(`/api/chats/${currentChatId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        title: (await tRes.json()).title,
+                      }),
+                    });
+                    router.refresh();
+                  }
+                });
               }
 
-              const messageParts: any[] = [{ type: "text", text: input }];
-              
+              // Build message parts for text and images
+              const messageParts: Array<
+                | { type: "text"; text: string }
+                | { type: "image"; image: string }
+              > = [{ type: "text", text: input }];
+
               // Add attachments if any
               for (const att of attachments) {
                 if (att.type.startsWith("image/") && att.dataUrl) {
@@ -437,9 +478,10 @@ export default function Chat({
               await append({
                 role: "user",
                 content: input,
-                parts: messageParts,
+                // Parts type is complex in AI SDK, using compatible format
+                parts: messageParts as never,
               });
-              
+
               setInput("");
               setAttachments([]);
             }}

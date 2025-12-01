@@ -131,33 +131,33 @@
   }
 }
 
-/* Mermaid chart customizations for better text visibility */
+/* Mermaid chart customizations */
+/* Inline chart in chat - keep compact */
 .mermaid-chart svg {
-  min-width: 800px !important;
   max-width: 100% !important;
+  width: auto !important;
   height: auto !important;
 }
 
-/* Enable text wrapping in flowchart nodes */
-.mermaid-chart .nodeLabel {
-  white-space: pre-wrap !important;
+/* Modal chart - full size with proper text */
+.mermaid-chart-modal svg {
+  max-width: none !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Enable text wrapping in flowchart nodes - no max-width to prevent cutoff */
+.mermaid-chart .nodeLabel,
+.mermaid-chart-modal .nodeLabel {
+  white-space: normal !important;
   word-wrap: break-word !important;
-  max-width: 200px !important;
   line-height: 1.4 !important;
   padding: 8px !important;
 }
 
-/* Increase node width for flowcharts */
-.mermaid-chart .node rect,
-.mermaid-chart .node circle,
-.mermaid-chart .node ellipse,
-.mermaid-chart .node polygon,
-.mermaid-chart .node path {
-  min-width: 150px !important;
-}
-
-/* Ensure labels are visible */
-.mermaid-chart text {
+/* Ensure readable font size */
+.mermaid-chart text,
+.mermaid-chart-modal text {
   font-size: 14px !important;
 }
 
