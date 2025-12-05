@@ -23,56 +23,74 @@ interface AppBotListProps {
   totalPages: number;
 }
 
-function BotListContent({ bots, currentPage, totalPages }: AppBotListProps) {
+// React 19 compatible search component
+function SearchBox() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const currentQuery = searchParams.get('q') || '';
   
-  // Initialize search query from URL
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [value, setValue] = useState(currentQuery);
 
-  // Sync state with URL (e.g. on back button)
+  // Sync with URL on navigation (back/forward)
   useEffect(() => {
-    const currentQ = searchParams.get("q") || "";
-    if (currentQ !== searchQuery) {
-      setSearchQuery(currentQ);
-    }
-  }, [searchParams, searchQuery]);
+    setValue(currentQuery);
+  }, [currentQuery]);
 
-  // Debounce search update to URL
+  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      const currentQ = searchParams.get('q') || '';
-      if (searchQuery !== currentQ) {
-        const params = new URLSearchParams(searchParams.toString());
-        if (searchQuery) {
-          params.set('q', searchQuery);
-        } else {
-          params.delete('q');
+      if (value.trim() !== currentQuery) {
+        const params = new URLSearchParams();
+        if (value.trim()) {
+          params.set('q', value.trim());
         }
-        params.set('page', '1'); // Reset page on search change
-        router.push(`${pathname}?${params.toString()}`);
+        const queryString = params.toString();
+        router.push(`${pathname}${queryString ? `?${queryString}` : ''}`);
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, router, pathname, searchParams]);
+  }, [value, currentQuery, pathname, router]);
+
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        placeholder="Search Weblets..."
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="pl-9 bg-white/50 backdrop-blur-sm border-neutral-200 focus:bg-white transition-colors"
+      />
+    </div>
+  );
+}
+
+function BotListContent({ bots, currentPage, totalPages }: AppBotListProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentQuery = searchParams.get('q') || '';
 
   return (
     <div className="space-y-8">
-      <div className="max-w-md mx-auto relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search Weblets..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 bg-white/50 backdrop-blur-sm border-neutral-200 focus:bg-white transition-colors"
-        />
+      <div className="max-w-md mx-auto">
+        <Suspense fallback={
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search Weblets..."
+              disabled
+              className="pl-9 bg-white/50 backdrop-blur-sm border-neutral-200"
+            />
+          </div>
+        }>
+          <SearchBox />
+        </Suspense>
       </div>
 
       {bots.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          No Weblets found matching &quot;{searchQuery}&quot;
+          No Weblets found matching &quot;{currentQuery}&quot;
         </div>
       )}
 

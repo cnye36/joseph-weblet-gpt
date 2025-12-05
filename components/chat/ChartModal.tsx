@@ -54,11 +54,58 @@ export function ChartModal({
     if (svg) {
       // Clone the SVG to avoid modifying the DOM
       const clonedSvg = svg.cloneNode(true) as SVGElement;
-      
+
       // Ensure XML namespace exists
       if (!clonedSvg.getAttribute("xmlns")) {
         clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
       }
+
+      // Inline computed styles for all elements to preserve appearance
+      const inlineAllStyles = (element: Element, originalElement: Element) => {
+        const computed = window.getComputedStyle(originalElement);
+
+        // Only inline critical SVG presentation attributes
+        const criticalProps = [
+          "fill",
+          "stroke",
+          "stroke-width",
+          "stroke-dasharray",
+          "font-family",
+          "font-size",
+          "font-weight",
+          "font-style",
+          "text-anchor",
+          "dominant-baseline",
+          "alignment-baseline",
+          "opacity",
+          "color",
+        ];
+
+        criticalProps.forEach((prop) => {
+          const value = computed.getPropertyValue(prop);
+          // Only set if there's a meaningful value
+          if (
+            value &&
+            value !== "none" &&
+            value !== "normal" &&
+            value !== "" &&
+            !element.hasAttribute(prop)
+          ) {
+            element.setAttribute(prop, value);
+          }
+        });
+
+        // Recursively process children
+        Array.from(element.children).forEach((child, index) => {
+          const originalChild = originalElement.children[index];
+          if (originalChild) {
+            inlineAllStyles(child, originalChild);
+          }
+        });
+      };
+
+      // Process all elements
+      inlineAllStyles(clonedSvg, svg);
 
       const svgData = new XMLSerializer().serializeToString(clonedSvg);
       const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });

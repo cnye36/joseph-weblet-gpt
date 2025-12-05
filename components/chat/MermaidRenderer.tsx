@@ -16,9 +16,82 @@ export function MermaidRendererComponent({ config }: MermaidRendererProps) {
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
-      theme: "dark",
+      theme: "base",
       securityLevel: "loose",
-      fontFamily: "inherit",
+      fontFamily: "ui-sans-serif, system-ui, sans-serif",
+      themeVariables: {
+        // Custom dark theme with all colors embedded in SVG
+        darkMode: true,
+        background: "#111827",
+        primaryColor: "#1f2937",
+        primaryTextColor: "#fff",
+        primaryBorderColor: "#6b7280",
+        lineColor: "#9ca3af",
+        secondaryColor: "#374151",
+        tertiaryColor: "#4b5563",
+
+        // Text and labels
+        mainBkg: "#1f2937",
+        secondBkg: "#374151",
+        tertiaryBkg: "#4b5563",
+        textColor: "#fff",
+        border1: "#6b7280",
+        border2: "#9ca3af",
+        note: "#fff",
+        noteTextColor: "#fff",
+        noteBkgColor: "#374151",
+        noteBorderColor: "#6b7280",
+
+        // Nodes and edges
+        nodeBorder: "#6b7280",
+        clusterBkg: "#374151",
+        clusterBorder: "#6b7280",
+        defaultLinkColor: "#9ca3af",
+        titleColor: "#fff",
+        edgeLabelBackground: "#1f2937",
+        nodeTextColor: "#fff",
+
+        // Flowchart specific
+        labelColor: "#fff",
+        labelTextColor: "#fff",
+        labelBoxBkgColor: "#1f2937",
+        labelBoxBorderColor: "#6b7280",
+
+        // Gantt specific
+        gridColor: "#6b7280",
+        todayLineColor: "#ef4444",
+        sectionBkgColor: "#1f2937",
+        sectionBkgColor2: "#374151",
+        altSectionBkgColor: "#374151",
+        taskBorderColor: "#6b7280",
+        taskBkgColor: "#374151",
+        taskTextColor: "#e5e7eb",
+        taskTextLightColor: "#e5e7eb",
+        taskTextOutsideColor: "#e5e7eb",
+        taskTextClickableColor: "#60a5fa",
+        activeTaskBorderColor: "#3b82f6",
+        activeTaskBkgColor: "#1e40af",
+        doneTaskBkgColor: "#065f46",
+        doneTaskBorderColor: "#10b981",
+        critBkgColor: "#991b1b",
+        critBorderColor: "#ef4444",
+
+        // Sequence diagrams
+        actorBorder: "#6b7280",
+        actorBkg: "#1f2937",
+        actorTextColor: "#fff",
+        actorLineColor: "#9ca3af",
+        signalColor: "#e5e7eb",
+        signalTextColor: "#fff",
+        sequenceNumberColor: "#fff",
+        activationBorderColor: "#6b7280",
+        activationBkgColor: "#374151",
+        loopTextColor: "#fff",
+
+        // Error states
+        errorBkgColor: "#991b1b",
+        errorTextColor: "#fff",
+      },
     });
   }, []);
 
