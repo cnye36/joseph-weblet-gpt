@@ -5,23 +5,65 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import MainSidebar from "@/components/sidebar/MainSidebar";
 import AppBotList from "@/components/AppBotList";
 
-export default async function AppDashboard() {
+export default async function AppDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const page = typeof resolvedSearchParams.page === 'string' ? parseInt(resolvedSearchParams.page) : 1;
+  const search = typeof resolvedSearchParams.q === 'string' ? resolvedSearchParams.q : '';
+  const limit = 12;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
   const supabase = await createClient();
   await isAdmin();
-  const { data } = await supabase
+
+  // Check if DB has any bots
+  const { count: totalDbBots } = await supabase
     .from("bots")
-    .select("id, name, description, system, avatar_url")
-    .order("id");
-  const list =
-    data && data.length > 0
-      ? data
-      : Object.values(staticBots).map((b) => ({
+    .select('*', { count: 'exact', head: true });
+
+  let bots: any[] = [];
+  let totalCount = 0;
+
+  if (totalDbBots && totalDbBots > 0) {
+     // DB Mode
+     let query = supabase
+        .from("bots")
+        .select("id, name, description, system, avatar_url", { count: 'exact' });
+
+     if (search) {
+        query = query.ilike('name', `%${search}%`);
+     }
+
+     const { data, count } = await query
+        .order("id")
+        .range(from, to);
+     
+     bots = data || [];
+     totalCount = count || 0;
+  } else {
+     // Static Mode
+     const allStatic = Object.values(staticBots).map((b) => ({
           id: b.id,
           name: b.name,
           description: "",
           system: b.system,
           avatar_url: null,
         }));
+     
+     const filtered = search 
+        ? allStatic.filter(b => b.name.toLowerCase().includes(search.toLowerCase()))
+        : allStatic;
+     
+     totalCount = filtered.length;
+     bots = filtered.slice(from, from + limit);
+  }
+
+  const totalPages = Math.ceil(totalCount / limit);
+
   return (
     <SidebarProvider>
       <MainSidebar />
@@ -38,7 +80,7 @@ export default async function AppDashboard() {
               </p>
             </div>
           </header>
-          <AppBotList bots={list} />
+          <AppBotList bots={bots} currentPage={page} totalPages={totalPages} />
         </div>
       </SidebarInset>
     </SidebarProvider>

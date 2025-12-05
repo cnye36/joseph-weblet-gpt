@@ -11,10 +11,9 @@ import MessageRenderer from "./MessageRenderer";
 import SimulationRenderer from "./SimulationRenderer";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import MermaidChart from "./MermaidChart";
 import { buildMermaidFromChartData } from "@/lib/chart-data";
-import ChartToolRenderer from "./ChartToolRenderer";
 import { ChartToolConfig } from "@/lib/chart-schemas";
+import { ChartToolRenderer } from "./ChartToolRenderer";
 
 export default function Chat({
   botId,
@@ -58,6 +57,7 @@ export default function Chat({
 
 
   const [enableSimulation, setEnableSimulation] = useState(false);
+  const [enableArxiv, setEnableArxiv] = useState(false);
 
   const {
     messages,
@@ -74,7 +74,9 @@ export default function Chat({
     body: {
       botId,
       chatId: chatIdRef.current,
+      chatId: chatIdRef.current,
       enableSimulation,
+      enableArxiv,
     },
     fetch: customFetch,
     onFinish: async (message) => {
@@ -227,7 +229,9 @@ export default function Chat({
                     p.toolInvocation !== null &&
                     "toolName" in p.toolInvocation &&
                     (p.toolInvocation.toolName === "simulate_model" ||
-                      p.toolInvocation.toolName === "generate_chart")
+                      p.toolInvocation.toolName === "generate_chart" ||
+                      p.toolInvocation.toolName === "arxiv_search_papers" ||
+                      p.toolInvocation.toolName === "arxiv_get_paper_details")
                   );
                 }
                 return false;
@@ -278,7 +282,7 @@ export default function Chat({
                             const result = state === "result" ? toolInv.result : undefined;
 
                             if (state === "result" && result && "config" in result && "status" in result) {
-                              return (
+                               return (
                                 <div key={toolCallId || idx} className="mt-4">
                                   <SimulationRenderer
                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -306,8 +310,8 @@ export default function Chat({
 
                             if (state === "result" && result) {
                               return (
-                                <div key={toolCallId || idx} className="mt-4">
-                                  <ChartToolRenderer config={result as ChartToolConfig} />
+                                <div key={toolCallId || idx} className="mt-4 w-full">
+                                  <ChartToolRenderer config={result as unknown as ChartToolConfig} />
                                 </div>
                               );
                             }
@@ -322,6 +326,29 @@ export default function Chat({
                               </div>
                             );
                           }
+
+                          if (toolName === "arxiv_search_papers" || toolName === "arxiv_get_paper_details") {
+                            const result = state === "result" ? toolInv.result : undefined;
+                            
+                            if (state === "result" && result) {
+                              // For now, we'll let the text response handle the display of arxiv results
+                              // or we could add a custom renderer later.
+                              // The tool returns data that the LLM uses to generate a response.
+                              return null; 
+                            }
+
+                            return (
+                              <div
+                                key={toolCallId || idx}
+                                className="mt-2 text-xs text-muted-foreground flex items-center gap-2"
+                              >
+                                <div className="size-3 rounded-full bg-primary/50 animate-pulse" />
+                                Searching ArXiv...
+                              </div>
+                            );
+                          }
+
+                          
                         }
                         return null;
                       })}
@@ -389,18 +416,33 @@ export default function Chat({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 mb-2 px-1">
-            <Switch
-              id="simulation-mode"
-              checked={enableSimulation}
-              onCheckedChange={setEnableSimulation}
-            />
-            <Label
-              htmlFor="simulation-mode"
-              className="text-xs text-muted-foreground font-medium cursor-pointer"
-            >
-              Run Simulation
-            </Label>
+          <div className="flex items-center justify-start gap-4 mb-2 px-1">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="simulation-mode"
+                checked={enableSimulation}
+                onCheckedChange={setEnableSimulation}
+              />
+              <Label
+                htmlFor="simulation-mode"
+                className="text-xs text-muted-foreground font-medium cursor-pointer"
+              >
+                Run Simulation
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="arxiv-mode"
+                checked={enableArxiv}
+                onCheckedChange={setEnableArxiv}
+              />
+              <Label
+                htmlFor="arxiv-mode"
+                className="text-xs text-muted-foreground font-medium cursor-pointer"
+              >
+                Search Arxiv
+              </Label>
+            </div>
           </div>
 
           {error && (

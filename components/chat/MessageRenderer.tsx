@@ -5,10 +5,8 @@ import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import Image from "next/image";
-import MermaidChart from "./MermaidChart";
 import CodeBlock from "./CodeBlock";
 import EnhancedTable from "./EnhancedTable";
-import { buildMermaidFromChartData } from "@/lib/chart-data";
 
 interface MessageRendererProps {
   content: string;
@@ -31,7 +29,7 @@ interface ReactElementWithProps extends React.ReactElement {
   };
 }
 
-export default function MessageRenderer({
+function MessageRenderer({
   content,
   className = "",
 }: MessageRendererProps) {
@@ -72,42 +70,7 @@ export default function MessageRenderer({
         }
         codeContent = codeContent.replace(/\n$/, "");
 
-        // Check if it's a mermaid diagram
-        if (language === "mermaid") {
-          // We still render it, but the system prompt should prevent this from happening often.
-          // This acts as a fallback for "legacy" or "rebellious" model outputs.
-          return <MermaidChart chart={codeContent} />;
-        }
-
-        if (language === "chart-data") {
-          try {
-            if (!codeContent || codeContent.trim().length === 0) {
-              return null;
-            }
-            const chartJson = JSON.parse(codeContent);
-            const mermaidChart = buildMermaidFromChartData(chartJson);
-            return <MermaidChart chart={mermaidChart} />;
-          } catch (error) {
-            const message =
-              error instanceof Error ? error.message : "Invalid chart data";
-            return (
-              <div className="border border-destructive/50 bg-destructive/10 rounded-lg p-4 my-2">
-                <p className="text-sm text-destructive font-semibold">
-                  Unable to render structured chart
-                </p>
-                <p className="text-xs text-destructive/80 mt-1">{message}</p>
-                <details className="mt-3">
-                  <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground font-semibold mb-2">
-                    Raw chart payload
-                  </summary>
-                  <pre className="text-xs bg-muted p-3 rounded mt-2 overflow-x-auto border">
-                    {codeContent}
-                  </pre>
-                </details>
-              </div>
-            );
-          }
-        }
+        
 
         // Inline code (no language specified and no newlines)
         if (!match && !codeContent.includes("\n")) {
@@ -364,3 +327,5 @@ export default function MessageRenderer({
     </div>
   );
 }
+
+export default React.memo(MessageRenderer);

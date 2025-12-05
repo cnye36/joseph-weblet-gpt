@@ -9,6 +9,7 @@ import {
   type SimulationConfig,
 } from "@/lib/simulation/core";
 import { chartToolSchema } from "@/lib/chart-schemas";
+import { arxivTools } from "@/lib/tools/arxiv";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -30,13 +31,18 @@ export async function POST(req: Request) {
       botId = defaultBotId,
       messages,
       enableSimulation = false,
-    } = BodySchema.extend({ enableSimulation: z.boolean().optional() }).parse(
+      enableArxiv = false,
+    } = BodySchema.extend({ 
+      enableSimulation: z.boolean().optional(),
+      enableArxiv: z.boolean().optional() 
+    }).parse(
       json
     );
 
     console.log("API Request:", {
       botId,
       enableSimulation,
+      enableArxiv,
       messagesCount: messages.length,
     });
 
@@ -178,6 +184,11 @@ For GANTT, you MUST include:
           }
         },
       });
+    }
+
+    // Conditionally add arxiv tools
+    if (enableArxiv) {
+      Object.assign(tools, arxivTools);
     }
 
     const result = await streamText({

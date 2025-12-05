@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { Pagination } from './Pagination';
 
 interface Bot {
   id: string;
@@ -17,21 +19,44 @@ interface Bot {
 
 interface AppBotListProps {
   bots: Bot[];
+  currentPage: number;
+  totalPages: number;
 }
 
-export default function AppBotList({ bots }: AppBotListProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+function BotListContent({ bots, currentPage, totalPages }: AppBotListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  // Initialize search query from URL
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
-  const filteredBots = bots.filter((bot) =>
-    bot.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ).sort((a, b) => {
-      // Sort by relevance: starts with > contains
-      const aStarts = a.name.toLowerCase().startsWith(searchQuery.toLowerCase());
-      const bStarts = b.name.toLowerCase().startsWith(searchQuery.toLowerCase());
-      if (aStarts && !bStarts) return -1;
-      if (!aStarts && bStarts) return 1;
-      return 0;
-  });
+  // Sync state with URL (e.g. on back button)
+  useEffect(() => {
+    const currentQ = searchParams.get('q') || '';
+    if (currentQ !== searchQuery) {
+      setSearchQuery(currentQ);
+    }
+  }, [searchParams]);
+
+  // Debounce search update to URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentQ = searchParams.get('q') || '';
+      if (searchQuery !== currentQ) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchQuery) {
+          params.set('q', searchQuery);
+        } else {
+          params.delete('q');
+        }
+        params.set('page', '1'); // Reset page on search change
+        router.push(`${pathname}?${params.toString()}`);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, router, pathname, searchParams]);
 
   return (
     <div className="space-y-8">
@@ -45,14 +70,14 @@ export default function AppBotList({ bots }: AppBotListProps) {
         />
       </div>
 
-      {filteredBots.length === 0 && (
+      {bots.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           No Weblets found matching &quot;{searchQuery}&quot;
         </div>
       )}
 
       <div className="max-w-5xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredBots.map((b) => (
+        {bots.map((b) => (
           <Link
             key={b.id}
             href={`/app/chat/${b.id}`}
@@ -89,6 +114,21 @@ export default function AppBotList({ bots }: AppBotListProps) {
           </Link>
         ))}
       </div>
+      
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        baseUrl={pathname}
+        searchParams={Object.fromEntries(searchParams.entries())}
+      />
     </div>
+  );
+}
+
+export default function AppBotList(props: AppBotListProps) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BotListContent {...props} />
+    </Suspense>
   );
 }

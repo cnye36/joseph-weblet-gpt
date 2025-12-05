@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, Expand } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ChartModal from "./ChartModal";
+import { ChartModal } from "./ChartModal";
 
 interface EnhancedTableProps {
   headers: string[];
@@ -75,7 +75,7 @@ export default function EnhancedTable({ headers, rows, className = "" }: Enhance
     URL.revokeObjectURL(url);
   };
 
-  const TableContent = () => (
+  const renderTable = () => (
     <table className="w-full text-sm">
         <thead className="bg-muted/50 border-b">
           <tr>
@@ -113,7 +113,7 @@ export default function EnhancedTable({ headers, rows, className = "" }: Enhance
   return (
     <>
       <div className={`relative group my-4 overflow-x-auto rounded-lg border ${className}`}>
-        <TableContent />
+        {renderTable()}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 bg-background/80 backdrop-blur-sm rounded p-1">
           <Button
             variant="secondary"
@@ -143,7 +143,7 @@ export default function EnhancedTable({ headers, rows, className = "" }: Enhance
         onDownload={downloadCSV}
       >
         <div className="overflow-x-auto">
-          <TableContent />
+          {renderTable()}
         </div>
       </ChartModal>
     </>
