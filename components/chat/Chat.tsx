@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {Message, useChat } from "ai/react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Send, Image as ImageIcon } from "lucide-react";
+import { Send, Image as ImageIcon, Square } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
 import MessageRenderer from "./MessageRenderer";
@@ -54,8 +54,6 @@ export default function Chat({
     [botId]
   );
 
-
-
   const [enableSimulation, setEnableSimulation] = useState(false);
   const [enableArxiv, setEnableArxiv] = useState(false);
 
@@ -69,11 +67,11 @@ export default function Chat({
     setInput,
     error,
     reload,
+    stop,
   } = useChat({
     api: "/api/chat",
     body: {
       botId,
-      chatId: chatIdRef.current,
       chatId: chatIdRef.current,
       enableSimulation,
       enableArxiv,
@@ -94,8 +92,12 @@ export default function Chat({
           text = msg.content;
         } else if (Array.isArray(msg.parts)) {
           text = msg.parts
-            .filter((p): p is { type: "text"; text: string } => 
-              typeof p === "object" && p !== null && "type" in p && p.type === "text"
+            .filter(
+              (p): p is { type: "text"; text: string } =>
+                typeof p === "object" &&
+                p !== null &&
+                "type" in p &&
+                p.type === "text"
             )
             .map((p) => p.text)
             .join("");
@@ -279,10 +281,16 @@ export default function Chat({
                           const { toolName, toolCallId, state } = toolInv;
 
                           if (toolName === "simulate_model") {
-                            const result = state === "result" ? toolInv.result : undefined;
+                            const result =
+                              state === "result" ? toolInv.result : undefined;
 
-                            if (state === "result" && result && "config" in result && "status" in result) {
-                               return (
+                            if (
+                              state === "result" &&
+                              result &&
+                              "config" in result &&
+                              "status" in result
+                            ) {
+                              return (
                                 <div key={toolCallId || idx} className="mt-4">
                                   <SimulationRenderer
                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -306,12 +314,20 @@ export default function Chat({
                           }
 
                           if (toolName === "generate_chart") {
-                            const result = state === "result" ? toolInv.result : undefined;
+                            const result =
+                              state === "result" ? toolInv.result : undefined;
 
                             if (state === "result" && result) {
                               return (
-                                <div key={toolCallId || idx} className="mt-4 w-full">
-                                  <ChartToolRenderer config={result as unknown as ChartToolConfig} />
+                                <div
+                                  key={toolCallId || idx}
+                                  className="mt-4 w-full"
+                                >
+                                  <ChartToolRenderer
+                                    config={
+                                      result as unknown as ChartToolConfig
+                                    }
+                                  />
                                 </div>
                               );
                             }
@@ -327,14 +343,18 @@ export default function Chat({
                             );
                           }
 
-                          if (toolName === "arxiv_search_papers" || toolName === "arxiv_get_paper_details") {
-                            const result = state === "result" ? toolInv.result : undefined;
-                            
+                          if (
+                            toolName === "arxiv_search_papers" ||
+                            toolName === "arxiv_get_paper_details"
+                          ) {
+                            const result =
+                              state === "result" ? toolInv.result : undefined;
+
                             if (state === "result" && result) {
                               // For now, we'll let the text response handle the display of arxiv results
                               // or we could add a custom renderer later.
                               // The tool returns data that the LLM uses to generate a response.
-                              return null; 
+                              return null;
                             }
 
                             return (
@@ -347,8 +367,6 @@ export default function Chat({
                               </div>
                             );
                           }
-
-                          
                         }
                         return null;
                       })}
@@ -448,9 +466,9 @@ export default function Chat({
           {error && (
             <div className="mb-2 p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-between gap-2">
               <span>{error.message}</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => reload()}
                 className="h-7 text-xs border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40"
               >
@@ -463,7 +481,17 @@ export default function Chat({
             ref={formRef}
             onSubmit={async (e) => {
               e.preventDefault();
+
+              // Prevent double submission
+              if (isLoading) return;
+
               if (!input.trim() && attachments.length === 0) return;
+
+              // Capture input and attachments, then clear immediately
+              const userInput = input;
+              const userAttachments = [...attachments];
+              setInput("");
+              setAttachments([]);
 
               let currentChatId = chatId;
               let shouldGenerateTitle = false;
@@ -472,7 +500,10 @@ export default function Chat({
                 const res = await fetch("/api/chats", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ botId, title: input.slice(0, 60) }),
+                  body: JSON.stringify({
+                    botId,
+                    title: userInput.slice(0, 60),
+                  }),
                 });
                 const data = (await res.json()) as { id: string };
                 currentChatId = data.id;
@@ -488,7 +519,7 @@ export default function Chat({
                 fetch("/api/chats/title", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ botId, prompt: input }),
+                  body: JSON.stringify({ botId, prompt: userInput }),
                 }).then(async (tRes) => {
                   if (tRes.ok) {
                     await fetch(`/api/chats/${currentChatId}`, {
@@ -507,10 +538,10 @@ export default function Chat({
               const messageParts: Array<
                 | { type: "text"; text: string }
                 | { type: "image"; image: string }
-              > = [{ type: "text", text: input }];
+              > = [{ type: "text", text: userInput }];
 
               // Add attachments if any
-              for (const att of attachments) {
+              for (const att of userAttachments) {
                 if (att.type.startsWith("image/") && att.dataUrl) {
                   messageParts.push({
                     type: "image",
@@ -527,7 +558,7 @@ export default function Chat({
                   body: JSON.stringify({
                     chatId: currentChatId,
                     role: "user",
-                    content: input,
+                    content: userInput,
                     parts: messageParts,
                   }),
                 });
@@ -535,13 +566,10 @@ export default function Chat({
 
               await append({
                 role: "user",
-                content: input,
+                content: userInput,
                 // Parts type is complex in AI SDK, using compatible format
                 parts: messageParts as never,
               });
-
-              setInput("");
-              setAttachments([]);
             }}
             className="relative flex items-end gap-2 bg-muted/50 p-2 rounded-xl border focus-within:ring-1 focus-within:ring-ring"
           >
@@ -558,6 +586,7 @@ export default function Chat({
               size="icon"
               className="shrink-0 text-muted-foreground hover:text-foreground"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
             >
               <ImageIcon className="size-5" />
             </Button>
@@ -566,16 +595,36 @@ export default function Chat({
               onChange={handleInputChange}
               placeholder="Type a message..."
               className="min-h-[20px] max-h-[200px] border-0 shadow-none focus-visible:ring-0 resize-none bg-transparent py-3"
+              disabled={isLoading}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  formRef.current?.requestSubmit();
+                  if (!isLoading) {
+                    formRef.current?.requestSubmit();
+                  }
                 }
               }}
             />
-            <Button type="submit" size="icon" className="shrink-0">
-              <Send className="size-4" />
-            </Button>
+            {isLoading ? (
+              <Button
+                type="button"
+                size="icon"
+                className="shrink-0"
+                onClick={stop}
+                variant="destructive"
+              >
+                <Square className="size-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                className="shrink-0"
+                disabled={!input.trim() && attachments.length === 0}
+              >
+                <Send className="size-4" />
+              </Button>
+            )}
           </form>
         </div>
       </div>

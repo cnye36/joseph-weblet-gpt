@@ -1,0 +1,468 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - main [ref=e12]:
+    - main [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e17]:
+          - link "Weblet GPT" [ref=e19] [cursor=pointer]:
+            - /url: /
+            - img "Weblet GPT" [ref=e20]
+          - list [ref=e23]:
+            - listitem [ref=e24]:
+              - link "Dashboard" [ref=e25] [cursor=pointer]:
+                - /url: /app
+                - img [ref=e26]
+                - generic: Dashboard
+            - listitem [ref=e29]:
+              - button "Weblets" [ref=e30] [cursor=pointer]:
+                - img [ref=e31]
+                - generic [ref=e34]: Weblets
+                - img [ref=e35]
+          - generic [ref=e37]:
+            - list [ref=e38]:
+              - listitem [ref=e39]:
+                - link "Admin" [ref=e40] [cursor=pointer]:
+                  - /url: /app/admin
+                  - img [ref=e41]
+                  - generic: Admin
+            - list [ref=e44]:
+              - listitem [ref=e45]:
+                - button "Curtis Curtis cnye36@gmail.com" [ref=e46] [cursor=pointer]:
+                  - img "Curtis" [ref=e48]
+                  - generic:
+                    - generic: Curtis
+                    - generic: cnye36@gmail.com
+                  - img [ref=e49]
+          - button "Toggle Sidebar" [ref=e52]
+        - main [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e56]:
+              - heading "Chat History" [level=3] [ref=e59]
+              - generic [ref=e61]:
+                - button "New Chat" [ref=e62] [cursor=pointer]
+                - navigation [ref=e63]:
+                  - generic [ref=e64]:
+                    - link "AlphaFold API Guide" [ref=e65] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=0b0f0c9d-dad5-4794-93ec-3152910928a8
+                    - button "Open menu" [ref=e67] [cursor=pointer]:
+                      - img
+                      - generic [ref=e68]: Open menu
+                  - generic [ref=e69]:
+                    - link "Protein Molecular Weights Table" [ref=e70] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=00d7cc68-4846-4b27-944d-e5dca71e5397
+                    - button "Open menu" [ref=e72] [cursor=pointer]:
+                      - img
+                      - generic [ref=e73]: Open menu
+                  - generic [ref=e74]:
+                    - link "Simple Python Function" [ref=e75] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=90bd5f2f-70c5-4583-b693-ac4623df6841
+                    - button "Open menu" [ref=e77] [cursor=pointer]:
+                      - img
+                      - generic [ref=e78]: Open menu
+                  - generic [ref=e79]:
+                    - link "New chat" [ref=e80] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=8d46c1cf-1a9b-4e2c-a7b0-b95881f083b7
+                    - button "Open menu" [ref=e82] [cursor=pointer]:
+                      - img
+                      - generic [ref=e83]: Open menu
+                  - generic [ref=e84]:
+                    - link "Testing Message System" [ref=e85] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=fdbefc5b-938e-4cf3-b64f-9ad555ec3728
+                    - button "Open menu" [ref=e87] [cursor=pointer]:
+                      - img
+                      - generic [ref=e88]: Open menu
+                  - generic [ref=e89]:
+                    - link "Fetch AlphaFold Data" [ref=e90] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=8bae3ab1-049f-427c-a7a6-3f1ba8f0fff7
+                    - button "Open menu" [ref=e92] [cursor=pointer]:
+                      - img
+                      - generic [ref=e93]: Open menu
+                  - generic [ref=e94]:
+                    - link "New chat" [ref=e95] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=5d12929a-2a26-4f8c-9349-f12c8b53860a
+                    - button "Open menu" [ref=e97] [cursor=pointer]:
+                      - img
+                      - generic [ref=e98]: Open menu
+                  - generic [ref=e99]:
+                    - link "AlphaFold API Python Example" [ref=e100] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=416c5042-a202-4c57-b305-96023cb9191c
+                    - button "Open menu" [ref=e102] [cursor=pointer]:
+                      - img
+                      - generic [ref=e103]: Open menu
+                  - generic [ref=e104]:
+                    - link "New chat" [ref=e105] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=19888dd7-9ea8-4210-80e6-a9665fd8e986
+                    - button "Open menu" [ref=e107] [cursor=pointer]:
+                      - img
+                      - generic [ref=e108]: Open menu
+                  - generic [ref=e109]:
+                    - link "Protein Comparison Table" [ref=e110] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=8136fea5-a6fc-47e4-9d53-73bd8de556af
+                    - button "Open menu" [ref=e112] [cursor=pointer]:
+                      - img
+                      - generic [ref=e113]: Open menu
+                  - generic [ref=e114]:
+                    - link "Basic Flowchart Steps" [ref=e115] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=bc9d554c-476c-4c52-bebc-720895e71758
+                    - button "Open menu" [ref=e117] [cursor=pointer]:
+                      - img
+                      - generic [ref=e118]: Open menu
+                  - generic [ref=e119]:
+                    - link "AlphaFold Explained Simply" [ref=e120] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=137a8652-0aac-4216-bf78-8a2e8f844c4f
+                    - button "Open menu" [ref=e122] [cursor=pointer]:
+                      - img
+                      - generic [ref=e123]: Open menu
+                  - generic [ref=e124]:
+                    - link "Understanding AlphaFold Technology" [ref=e125] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=32314118-cca8-4e15-a351-6d0400d1ff3c
+                    - button "Open menu" [ref=e127] [cursor=pointer]:
+                      - img
+                      - generic [ref=e128]: Open menu
+                  - generic [ref=e129]:
+                    - link "Exploring Assistant Capabilities" [ref=e130] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=2fd09200-ca56-4b57-9667-32b82d111a28
+                    - button "Open menu" [ref=e132] [cursor=pointer]:
+                      - img
+                      - generic [ref=e133]: Open menu
+                  - generic [ref=e134]:
+                    - link "Recent Quantum Error Correction" [ref=e135] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=1f11338b-ea4d-49c8-aa9b-ba9ec1d5258b
+                    - button "Open menu" [ref=e137] [cursor=pointer]:
+                      - img
+                      - generic [ref=e138]: Open menu
+                  - generic [ref=e139]:
+                    - link "CRISPR Experiment Flowchart" [ref=e140] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=d52fd230-34e5-4a1e-99b5-cf7ba890abef
+                    - button "Open menu" [ref=e142] [cursor=pointer]:
+                      - img
+                      - generic [ref=e143]: Open menu
+                  - generic [ref=e144]:
+                    - link "AlphaFold Alternatives Review" [ref=e145] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=f56a3fec-f29f-4ad6-9001-1942db6d0e52
+                    - button "Open menu" [ref=e147] [cursor=pointer]:
+                      - img
+                      - generic [ref=e148]: Open menu
+                  - generic [ref=e149]:
+                    - link "AlphaFold Alternatives Comparison" [ref=e150] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=52e48563-a01c-407e-9df2-f2840330e7a1
+                    - button "Open menu" [ref=e152] [cursor=pointer]:
+                      - img
+                      - generic [ref=e153]: Open menu
+                  - generic [ref=e154]:
+                    - link "Latest Protein Prediction Advances" [ref=e155] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=34cd93d6-9aea-4809-8cf2-22edf1c07544
+                    - button "Open menu" [ref=e157] [cursor=pointer]:
+                      - img
+                      - generic [ref=e158]: Open menu
+                  - generic [ref=e159]:
+                    - link "Comparing CASP Protein Benchmarks" [ref=e160] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=3511f077-28b7-4955-91be-10ed56f93e62
+                    - button "Open menu" [ref=e162] [cursor=pointer]:
+                      - img
+                      - generic [ref=e163]: Open menu
+                  - generic [ref=e164]:
+                    - link "CASP Protein Prediction Benchmarks" [ref=e165] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=625ac1fb-3201-4f50-9366-6133b882011c
+                    - button "Open menu" [ref=e167] [cursor=pointer]:
+                      - img
+                      - generic [ref=e168]: Open menu
+                  - generic [ref=e169]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e170] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=f53b142e-e1b4-427f-968a-6a1dcb00f017
+                    - button "Open menu" [ref=e172] [cursor=pointer]:
+                      - img
+                      - generic [ref=e173]: Open menu
+                  - generic [ref=e174]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e175] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=84e07990-6fe3-4b4e-a786-7ca75b3ad6c7
+                    - button "Open menu" [ref=e177] [cursor=pointer]:
+                      - img
+                      - generic [ref=e178]: Open menu
+                  - generic [ref=e179]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e180] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=b9585bf2-6427-4b80-ad43-1ff096876c0f
+                    - button "Open menu" [ref=e182] [cursor=pointer]:
+                      - img
+                      - generic [ref=e183]: Open menu
+                  - generic [ref=e184]:
+                    - link "Reproducing AlphaFold Challenges" [ref=e185] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=1b7b15b7-a477-49b0-8b4b-7e60aecebd3b
+                    - button "Open menu" [ref=e187] [cursor=pointer]:
+                      - img
+                      - generic [ref=e188]: Open menu
+                  - generic [ref=e189]:
+                    - link "Challenges Reproducing AlphaFold Models" [ref=e190] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=d48d7930-c47b-4434-a20b-630eea7fc641
+                    - button "Open menu" [ref=e192] [cursor=pointer]:
+                      - img
+                      - generic [ref=e193]: Open menu
+                  - generic [ref=e194]:
+                    - link "AlphaFold Reproduction Challenges" [ref=e195] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=d41d282c-fe95-4fd4-ae11-757b9d70e13c
+                    - button "Open menu" [ref=e197] [cursor=pointer]:
+                      - img
+                      - generic [ref=e198]: Open menu
+                  - generic [ref=e199]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e200] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=79bf52ec-ee3d-4727-8615-999c04f8984f
+                    - button "Open menu" [ref=e202] [cursor=pointer]:
+                      - img
+                      - generic [ref=e203]: Open menu
+                  - generic [ref=e204]:
+                    - link "AlphaFold Reproduction Hurdles" [ref=e205] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=1bc8f512-1a40-4e49-bdac-8805197445c3
+                    - button "Open menu" [ref=e207] [cursor=pointer]:
+                      - img
+                      - generic [ref=e208]: Open menu
+                  - generic [ref=e209]:
+                    - link "AlphaFold Reproduction Challenges" [ref=e210] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=6f418a2b-b416-4374-8865-21b4f48b2663
+                    - button "Open menu" [ref=e212] [cursor=pointer]:
+                      - img
+                      - generic [ref=e213]: Open menu
+                  - generic [ref=e214]:
+                    - link "Post AlphaFold Advances" [ref=e215] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=b4158909-369a-442b-9e8f-d07c27eed6b1
+                    - button "Open menu" [ref=e217] [cursor=pointer]:
+                      - img
+                      - generic [ref=e218]: Open menu
+                  - generic [ref=e219]:
+                    - link "Post AlphaFold Advances" [ref=e220] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=8d2e77fe-feb4-4350-9523-e0a189789729
+                    - button "Open menu" [ref=e222] [cursor=pointer]:
+                      - img
+                      - generic [ref=e223]: Open menu
+                  - generic [ref=e224]:
+                    - link "Exploring Assistant Abilities" [ref=e225] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=4e2b9177-5875-468d-9178-c30768d16990
+                    - button "Open menu" [ref=e227] [cursor=pointer]:
+                      - img
+                      - generic [ref=e228]: Open menu
+              - button "Toggle Sidebar" [ref=e229]
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - img "AlphaFold avatar" [ref=e232]
+                - generic [ref=e233]:
+                  - generic [ref=e234]: AlphaFold
+                  - generic [ref=e235]: Fetches 3D structure data from the AlphaFold Database (using UniProt IDs) and summarizes protein information...
+                  - generic [ref=e236]: "Model: openai/gpt-4.1"
+              - generic [ref=e238]:
+                - generic [ref=e240]:
+                  - generic [ref=e242]:
+                    - generic [ref=e243]: user
+                    - paragraph [ref=e246]: Explain how to use AlphaFold API with a code example and a table showing endpoints
+                  - generic [ref=e248]:
+                    - generic [ref=e249]: assistant
+                    - generic [ref=e251]:
+                      - paragraph [ref=e252]:
+                        - text: Certainly! AlphaFold does not offer a formal RESTful “API” for programmatic prediction, but the AlphaFold Protein Structure Database provides direct downloadable endpoints for protein structure files via a predictable URL scheme based on UniProt IDs. If you wish to fetch structure data automatically, you can do so by constructing URLs and using Python libraries like
+                        - code [ref=e253]: requests
+                        - text: . Below are step-by-step instructions and a sample code.
+                      - separator [ref=e254]
+                      - heading "How to Use the AlphaFold Data Endpoint" [level=2] [ref=e255]
+                      - heading "1. URL Construction" [level=3] [ref=e256]
+                      - paragraph [ref=e257]: "To retrieve a predicted structure for a protein, construct the URL as follows:"
+                      - code [ref=e259]: "https://alphafold.ebi.ac.uk/files/AF-{UniProt_ID}-F1-model_v4.cif"
+                      - list [ref=e260]:
+                        - listitem [ref=e261]:
+                          - text: Replace
+                          - code [ref=e262]: "{UniProt_ID}"
+                          - text: with your protein UniProt ID (e.g.,
+                          - code [ref=e263]: P0DMS8
+                          - text: for a COVID-19 spike protein).
+                      - heading "2. Accessing and Downloading the Structure" [level=3] [ref=e264]
+                      - paragraph [ref=e265]:
+                        - text: You can use Python’s
+                        - code [ref=e266]: requests
+                        - text: library to programmatically access the data.
+                      - heading "Example Code" [level=4] [ref=e267]
+                      - generic [ref=e269]:
+                        - generic [ref=e270]:
+                          - generic [ref=e271]: python
+                          - button "Copy code" [ref=e272] [cursor=pointer]:
+                            - img
+                        - code [ref=e274]:
+                          - generic [ref=e275]:
+                            - generic [ref=e276]: "1"
+                            - text: import requests
+                          - generic [ref=e278]: "2"
+                          - generic [ref=e279]:
+                            - generic [ref=e280]: "3"
+                            - text: "def fetch_alphafold_structure(uniprot_id):"
+                          - generic [ref=e281]:
+                            - generic [ref=e282]: "4"
+                            - text: "\"\"\""
+                          - generic [ref=e283]:
+                            - generic [ref=e284]: "5"
+                            - text: Fetches the AlphaFold predicted structure for the given UniProt ID.
+                          - generic [ref=e285]:
+                            - generic [ref=e286]: "6"
+                            - text: Returns the response content or an error message.
+                          - generic [ref=e287]:
+                            - generic [ref=e288]: "7"
+                            - text: "\"\"\""
+                          - generic [ref=e289]:
+                            - generic [ref=e290]: "8"
+                            - text: base_url = "https://alphafold.ebi.ac.uk/files"
+                          - generic [ref=e291]:
+                            - generic [ref=e292]: "9"
+                            - text: "structure_url = f\"{base_url}/AF-{uniprot_id}-F1-model_v4.cif\""
+                          - generic [ref=e293]:
+                            - generic [ref=e294]: "10"
+                            - text: "try:"
+                          - generic [ref=e295]:
+                            - generic [ref=e296]: "11"
+                            - text: response = requests.get(structure_url)
+                          - generic [ref=e297]:
+                            - generic [ref=e298]: "12"
+                            - text: "if response.status_code == 200:"
+                          - generic [ref=e299]:
+                            - generic [ref=e300]: "13"
+                            - text: "print(f\"Structure file for {uniprot_id} downloaded successfully.\")"
+                          - generic [ref=e301]:
+                            - generic [ref=e302]: "14"
+                            - text: "return response.content # mmCIF file content"
+                          - generic [ref=e303]:
+                            - generic [ref=e304]: "15"
+                            - text: "else:"
+                          - generic [ref=e305]:
+                            - generic [ref=e306]: "16"
+                            - text: "print(f\"Structure not found for UniProt ID: {uniprot_id}\")"
+                          - generic [ref=e307]:
+                            - generic [ref=e308]: "17"
+                            - text: return None
+                          - generic [ref=e309]:
+                            - generic [ref=e310]: "18"
+                            - text: "except Exception as e:"
+                          - generic [ref=e311]:
+                            - generic [ref=e312]: "19"
+                            - text: "print(f\"Error fetching structure: {e}\")"
+                          - generic [ref=e313]:
+                            - generic [ref=e314]: "20"
+                            - text: return None
+                          - generic [ref=e316]: "21"
+                          - generic [ref=e317]:
+                            - generic [ref=e318]: "22"
+                            - text: "# Example usage"
+                          - generic [ref=e319]:
+                            - generic [ref=e320]: "23"
+                            - text: structure_data = fetch_alphafold_structure("P0DMS8")
+                          - generic [ref=e321]:
+                            - generic [ref=e322]: "24"
+                            - text: "# You can save the file if structure_data is not None"
+                          - generic [ref=e323]:
+                            - generic [ref=e324]: "25"
+                            - text: "if structure_data:"
+                          - generic [ref=e325]:
+                            - generic [ref=e326]: "26"
+                            - text: "with open(\"AF-P0DMS8-F1-model_v4.cif\", \"wb\") as f:"
+                          - generic [ref=e327]:
+                            - generic [ref=e328]: "27"
+                            - text: f.write(structure_data)
+                      - separator [ref=e329]
+                      - heading "AlphaFold Database Endpoint Table" [level=2] [ref=e330]
+                      - generic [ref=e331]:
+                        - table [ref=e332]:
+                          - rowgroup [ref=e333]:
+                            - row "Endpoint Type URL Pattern Method Description Response Format" [ref=e334]:
+                              - columnheader "Endpoint Type" [ref=e335] [cursor=pointer]:
+                                - generic [ref=e336]:
+                                  - generic [ref=e337]: Endpoint Type
+                                  - img [ref=e338]
+                              - columnheader "URL Pattern" [ref=e341] [cursor=pointer]:
+                                - generic [ref=e342]:
+                                  - generic [ref=e343]: URL Pattern
+                                  - img [ref=e344]
+                              - columnheader "Method" [ref=e347] [cursor=pointer]:
+                                - generic [ref=e348]:
+                                  - generic [ref=e349]: Method
+                                  - img [ref=e350]
+                              - columnheader "Description" [ref=e353] [cursor=pointer]:
+                                - generic [ref=e354]:
+                                  - generic [ref=e355]: Description
+                                  - img [ref=e356]
+                              - columnheader "Response Format" [ref=e359] [cursor=pointer]:
+                                - generic [ref=e360]:
+                                  - generic [ref=e361]: Response Format
+                                  - img [ref=e362]
+                          - rowgroup [ref=e365]:
+                            - 'row "Structure (mmCIF) https://alphafold.ebi.ac.uk/files/AF-{UniProt_ID}-F1-model_v4.cif GET Download predicted structure (mmCIF format) .cif file" [ref=e366]':
+                              - cell "Structure (mmCIF)" [ref=e367]
+                              - 'cell "https://alphafold.ebi.ac.uk/files/AF-{UniProt_ID}-F1-model_v4.cif" [ref=e368]'
+                              - cell "GET" [ref=e369]
+                              - cell "Download predicted structure (mmCIF format)" [ref=e370]
+                              - cell ".cif file" [ref=e371]
+                            - 'row "Structure (PDB) https://alphafold.ebi.ac.uk/files/AF-{UniProt_ID}-F1-model_v4.pdb (may not always exist) GET Download predicted structure (PDB format, optional) .pdb file" [ref=e372]':
+                              - cell "Structure (PDB)" [ref=e373]
+                              - 'cell "https://alphafold.ebi.ac.uk/files/AF-{UniProt_ID}-F1-model_v4.pdb (may not always exist)" [ref=e374]'
+                              - cell "GET" [ref=e375]
+                              - cell "Download predicted structure (PDB format, optional)" [ref=e376]
+                              - cell ".pdb file" [ref=e377]
+                            - 'row "Model JSON https://alphafold.ebi.ac.uk/api/prediction/{UniProt_ID} GET Prediction metadata (Model info, confidence, etc.) JSON" [ref=e378]':
+                              - cell "Model JSON" [ref=e379]
+                              - 'cell "https://alphafold.ebi.ac.uk/api/prediction/{UniProt_ID}" [ref=e380]'
+                              - cell "GET" [ref=e381]
+                              - cell "Prediction metadata (Model info, confidence, etc.)" [ref=e382]
+                              - cell "JSON" [ref=e383]
+                            - 'row "Database search https://alphafold.ebi.ac.uk/api/search?query={query} GET Search for proteins by name/ID JSON" [ref=e384]':
+                              - cell "Database search" [ref=e385]
+                              - 'cell "https://alphafold.ebi.ac.uk/api/search?query={query}" [ref=e386]'
+                              - cell "GET" [ref=e387]
+                              - cell "Search for proteins by name/ID" [ref=e388]
+                              - cell "JSON" [ref=e389]
+                        - generic [ref=e390]:
+                          - button "Enlarge" [ref=e391] [cursor=pointer]:
+                            - img
+                            - text: Enlarge
+                          - button "CSV" [ref=e392] [cursor=pointer]:
+                            - img
+                            - text: CSV
+                      - separator [ref=e393]
+                      - paragraph [ref=e394]:
+                        - strong [ref=e395]: "Notes:"
+                      - list [ref=e396]:
+                        - listitem [ref=e397]:
+                          - text: Replace
+                          - code [ref=e398]: "{UniProt_ID}"
+                          - text: with a valid UniProt accession.
+                        - listitem [ref=e399]: mmCIF is the canonical supported file format.
+                        - listitem [ref=e400]: Not all proteins have PDB files.
+                        - listitem [ref=e401]: The JSON endpoint gives model metadata (sequence, domains, pLDDT scores, etc.)—not full structures.
+                      - separator [ref=e402]
+                      - heading "Summary" [level=2] [ref=e403]
+                      - list [ref=e404]:
+                        - listitem [ref=e405]:
+                          - text: AlphaFold data is
+                          - strong [ref=e406]: publicly accessible via stable endpoints
+                          - text: —no formal REST API authentication needed.
+                        - listitem [ref=e407]:
+                          - text: You can
+                          - strong [ref=e408]: automate downloads
+                          - text: using simple HTTP requests.
+                        - listitem [ref=e409]:
+                          - text: The URLs and endpoints are
+                          - strong [ref=e410]: deterministic and based on UniProt IDs
+                          - text: ", which makes scripting straightforward."
+                        - listitem [ref=e411]: For metadata, the AlphaFold API returns JSON with prediction details.
+                      - paragraph [ref=e412]: If you need help parsing mmCIF files or more advanced usage, let me know!
+                - generic [ref=e414]:
+                  - generic [ref=e415]:
+                    - generic [ref=e416]:
+                      - switch "Run Simulation" [ref=e417] [cursor=pointer]
+                      - generic [ref=e418] [cursor=pointer]: Run Simulation
+                    - generic [ref=e419]:
+                      - switch "Search Arxiv" [ref=e420] [cursor=pointer]
+                      - generic [ref=e421] [cursor=pointer]: Search Arxiv
+                  - generic [ref=e422]:
+                    - button [ref=e423] [cursor=pointer]:
+                      - img
+                    - textbox "Type a message..." [active] [ref=e424]
+                    - button [ref=e425] [cursor=pointer]:
+                      - img
+```

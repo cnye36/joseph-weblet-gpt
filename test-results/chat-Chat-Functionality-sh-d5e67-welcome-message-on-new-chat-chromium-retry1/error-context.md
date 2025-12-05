@@ -1,0 +1,231 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - main [ref=e12]:
+    - main [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e17]:
+          - link "Weblet GPT" [ref=e19] [cursor=pointer]:
+            - /url: /
+            - img "Weblet GPT" [ref=e20]
+          - list [ref=e23]:
+            - listitem [ref=e24]:
+              - link "Dashboard" [ref=e25] [cursor=pointer]:
+                - /url: /app
+                - img [ref=e26]
+                - generic: Dashboard
+            - listitem [ref=e29]:
+              - button "Weblets" [ref=e30] [cursor=pointer]:
+                - img [ref=e31]
+                - generic [ref=e34]: Weblets
+                - img [ref=e35]
+          - generic [ref=e37]:
+            - list [ref=e38]:
+              - listitem [ref=e39]:
+                - link "Admin" [ref=e40] [cursor=pointer]:
+                  - /url: /app/admin
+                  - img [ref=e41]
+                  - generic: Admin
+            - list [ref=e44]:
+              - listitem [ref=e45]:
+                - button "Curtis Curtis cnye36@gmail.com" [ref=e46] [cursor=pointer]:
+                  - img "Curtis" [ref=e48]
+                  - generic:
+                    - generic: Curtis
+                    - generic: cnye36@gmail.com
+                  - img [ref=e49]
+          - button "Toggle Sidebar" [ref=e52]
+        - main [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e56]:
+              - heading "Chat History" [level=3] [ref=e59]
+              - generic [ref=e61]:
+                - button "New Chat" [ref=e62] [cursor=pointer]
+                - navigation [ref=e63]:
+                  - generic [ref=e64]:
+                    - link "AlphaFold API Python Example" [ref=e65] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=416c5042-a202-4c57-b305-96023cb9191c
+                    - button "Open menu" [ref=e67] [cursor=pointer]:
+                      - img
+                      - generic [ref=e68]: Open menu
+                  - generic [ref=e69]:
+                    - link "New chat" [ref=e70] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=19888dd7-9ea8-4210-80e6-a9665fd8e986
+                    - button "Open menu" [ref=e72] [cursor=pointer]:
+                      - img
+                      - generic [ref=e73]: Open menu
+                  - generic [ref=e74]:
+                    - link "Protein Comparison Table" [ref=e75] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=8136fea5-a6fc-47e4-9d53-73bd8de556af
+                    - button "Open menu" [ref=e77] [cursor=pointer]:
+                      - img
+                      - generic [ref=e78]: Open menu
+                  - generic [ref=e79]:
+                    - link "Basic Flowchart Steps" [ref=e80] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=bc9d554c-476c-4c52-bebc-720895e71758
+                    - button "Open menu" [ref=e82] [cursor=pointer]:
+                      - img
+                      - generic [ref=e83]: Open menu
+                  - generic [ref=e84]:
+                    - link "AlphaFold Explained Simply" [ref=e85] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=137a8652-0aac-4216-bf78-8a2e8f844c4f
+                    - button "Open menu" [ref=e87] [cursor=pointer]:
+                      - img
+                      - generic [ref=e88]: Open menu
+                  - generic [ref=e89]:
+                    - link "Understanding AlphaFold Technology" [ref=e90] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=32314118-cca8-4e15-a351-6d0400d1ff3c
+                    - button "Open menu" [ref=e92] [cursor=pointer]:
+                      - img
+                      - generic [ref=e93]: Open menu
+                  - generic [ref=e94]:
+                    - link "Exploring Assistant Capabilities" [ref=e95] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=2fd09200-ca56-4b57-9667-32b82d111a28
+                    - button "Open menu" [ref=e97] [cursor=pointer]:
+                      - img
+                      - generic [ref=e98]: Open menu
+                  - generic [ref=e99]:
+                    - link "Recent Quantum Error Correction" [ref=e100] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=1f11338b-ea4d-49c8-aa9b-ba9ec1d5258b
+                    - button "Open menu" [ref=e102] [cursor=pointer]:
+                      - img
+                      - generic [ref=e103]: Open menu
+                  - generic [ref=e104]:
+                    - link "CRISPR Experiment Flowchart" [ref=e105] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=d52fd230-34e5-4a1e-99b5-cf7ba890abef
+                    - button "Open menu" [ref=e107] [cursor=pointer]:
+                      - img
+                      - generic [ref=e108]: Open menu
+                  - generic [ref=e109]:
+                    - link "AlphaFold Alternatives Review" [ref=e110] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=f56a3fec-f29f-4ad6-9001-1942db6d0e52
+                    - button "Open menu" [ref=e112] [cursor=pointer]:
+                      - img
+                      - generic [ref=e113]: Open menu
+                  - generic [ref=e114]:
+                    - link "AlphaFold Alternatives Comparison" [ref=e115] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=52e48563-a01c-407e-9df2-f2840330e7a1
+                    - button "Open menu" [ref=e117] [cursor=pointer]:
+                      - img
+                      - generic [ref=e118]: Open menu
+                  - generic [ref=e119]:
+                    - link "Latest Protein Prediction Advances" [ref=e120] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=34cd93d6-9aea-4809-8cf2-22edf1c07544
+                    - button "Open menu" [ref=e122] [cursor=pointer]:
+                      - img
+                      - generic [ref=e123]: Open menu
+                  - generic [ref=e124]:
+                    - link "Comparing CASP Protein Benchmarks" [ref=e125] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=3511f077-28b7-4955-91be-10ed56f93e62
+                    - button "Open menu" [ref=e127] [cursor=pointer]:
+                      - img
+                      - generic [ref=e128]: Open menu
+                  - generic [ref=e129]:
+                    - link "CASP Protein Prediction Benchmarks" [ref=e130] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=625ac1fb-3201-4f50-9366-6133b882011c
+                    - button "Open menu" [ref=e132] [cursor=pointer]:
+                      - img
+                      - generic [ref=e133]: Open menu
+                  - generic [ref=e134]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e135] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=f53b142e-e1b4-427f-968a-6a1dcb00f017
+                    - button "Open menu" [ref=e137] [cursor=pointer]:
+                      - img
+                      - generic [ref=e138]: Open menu
+                  - generic [ref=e139]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e140] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=84e07990-6fe3-4b4e-a786-7ca75b3ad6c7
+                    - button "Open menu" [ref=e142] [cursor=pointer]:
+                      - img
+                      - generic [ref=e143]: Open menu
+                  - generic [ref=e144]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e145] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=b9585bf2-6427-4b80-ad43-1ff096876c0f
+                    - button "Open menu" [ref=e147] [cursor=pointer]:
+                      - img
+                      - generic [ref=e148]: Open menu
+                  - generic [ref=e149]:
+                    - link "Reproducing AlphaFold Challenges" [ref=e150] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=1b7b15b7-a477-49b0-8b4b-7e60aecebd3b
+                    - button "Open menu" [ref=e152] [cursor=pointer]:
+                      - img
+                      - generic [ref=e153]: Open menu
+                  - generic [ref=e154]:
+                    - link "Challenges Reproducing AlphaFold Models" [ref=e155] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=d48d7930-c47b-4434-a20b-630eea7fc641
+                    - button "Open menu" [ref=e157] [cursor=pointer]:
+                      - img
+                      - generic [ref=e158]: Open menu
+                  - generic [ref=e159]:
+                    - link "AlphaFold Reproduction Challenges" [ref=e160] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=d41d282c-fe95-4fd4-ae11-757b9d70e13c
+                    - button "Open menu" [ref=e162] [cursor=pointer]:
+                      - img
+                      - generic [ref=e163]: Open menu
+                  - generic [ref=e164]:
+                    - link "AlphaFold Reproducibility Challenges" [ref=e165] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=79bf52ec-ee3d-4727-8615-999c04f8984f
+                    - button "Open menu" [ref=e167] [cursor=pointer]:
+                      - img
+                      - generic [ref=e168]: Open menu
+                  - generic [ref=e169]:
+                    - link "AlphaFold Reproduction Hurdles" [ref=e170] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=1bc8f512-1a40-4e49-bdac-8805197445c3
+                    - button "Open menu" [ref=e172] [cursor=pointer]:
+                      - img
+                      - generic [ref=e173]: Open menu
+                  - generic [ref=e174]:
+                    - link "AlphaFold Reproduction Challenges" [ref=e175] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=6f418a2b-b416-4374-8865-21b4f48b2663
+                    - button "Open menu" [ref=e177] [cursor=pointer]:
+                      - img
+                      - generic [ref=e178]: Open menu
+                  - generic [ref=e179]:
+                    - link "Post AlphaFold Advances" [ref=e180] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=b4158909-369a-442b-9e8f-d07c27eed6b1
+                    - button "Open menu" [ref=e182] [cursor=pointer]:
+                      - img
+                      - generic [ref=e183]: Open menu
+                  - generic [ref=e184]:
+                    - link "Post AlphaFold Advances" [ref=e185] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=8d2e77fe-feb4-4350-9523-e0a189789729
+                    - button "Open menu" [ref=e187] [cursor=pointer]:
+                      - img
+                      - generic [ref=e188]: Open menu
+                  - generic [ref=e189]:
+                    - link "Exploring Assistant Abilities" [ref=e190] [cursor=pointer]:
+                      - /url: /app/chat/alphafold-mhc1hnkt?chat=4e2b9177-5875-468d-9178-c30768d16990
+                    - button "Open menu" [ref=e192] [cursor=pointer]:
+                      - img
+                      - generic [ref=e193]: Open menu
+              - button "Toggle Sidebar" [ref=e194]
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - img "AlphaFold avatar" [ref=e197]
+                - generic [ref=e198]:
+                  - generic [ref=e199]: AlphaFold
+                  - generic [ref=e200]: Fetches 3D structure data from the AlphaFold Database (using UniProt IDs) and summarizes protein information...
+                  - generic [ref=e201]: "Model: openai/gpt-4.1"
+              - generic [ref=e203]:
+                - generic [ref=e206]:
+                  - heading "Hello there!" [level=2] [ref=e207]
+                  - paragraph [ref=e208]: How can I help you today?
+                - generic [ref=e210]:
+                  - generic [ref=e211]:
+                    - generic [ref=e212]:
+                      - switch "Run Simulation" [ref=e213] [cursor=pointer]
+                      - generic [ref=e214] [cursor=pointer]: Run Simulation
+                    - generic [ref=e215]:
+                      - switch "Search Arxiv" [ref=e216] [cursor=pointer]
+                      - generic [ref=e217] [cursor=pointer]: Search Arxiv
+                  - generic [ref=e218]:
+                    - button [ref=e219] [cursor=pointer]:
+                      - img
+                    - textbox "Type a message..." [ref=e220]
+                    - button [ref=e221] [cursor=pointer]:
+                      - img
+```
