@@ -1,0 +1,39 @@
+{
+  // TypeScript validation
+  "typescript.validate.enable": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ESLint integration
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.run": "onType",
+  
+  // Show errors in problems panel
+  "problems.showCurrentInStatus": true,
+  
+  // Format on save
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // Next.js specific
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+
+  // Turbopack specific (no special settings needed, but good to document)
+  "search.exclude": {
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/out": true,
+    "**/build": true
+  }
+}
+

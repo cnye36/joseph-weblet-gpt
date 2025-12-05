@@ -33,11 +33,11 @@ function BotListContent({ bots, currentPage, totalPages }: AppBotListProps) {
 
   // Sync state with URL (e.g. on back button)
   useEffect(() => {
-    const currentQ = searchParams.get('q') || '';
+    const currentQ = searchParams.get("q") || "";
     if (currentQ !== searchQuery) {
       setSearchQuery(currentQ);
     }
-  }, [searchParams]);
+  }, [searchParams, searchQuery]);
 
   // Debounce search update to URL
   useEffect(() => {

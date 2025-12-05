@@ -11,7 +11,6 @@ import MessageRenderer from "./MessageRenderer";
 import SimulationRenderer from "./SimulationRenderer";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { buildMermaidFromChartData } from "@/lib/chart-data";
 import { ChartToolConfig } from "@/lib/chart-schemas";
 import { ChartToolRenderer } from "./ChartToolRenderer";
 

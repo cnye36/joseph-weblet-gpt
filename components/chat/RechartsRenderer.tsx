@@ -42,21 +42,38 @@ export function RechartsRendererComponent({ config }: RechartsRendererProps) {
     return <div className="text-red-500">No data available for chart.</div>;
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipPayloadEntry {
+    name: string;
+    value: number | string;
+    color: string;
+  }
+
+  interface CustomTooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadEntry[];
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background/95 backdrop-blur-sm border border-border p-3 rounded-lg shadow-lg">
           <p className="font-medium text-sm mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div 
-                className="w-2 h-2 rounded-full" 
+          {payload.map((entry: TooltipPayloadEntry, index: number) => (
+            <div
+              key={index}
+              className="flex items-center gap-2 text-sm text-muted-foreground"
+            >
+              <div
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
               <span className="capitalize">{entry.name}:</span>
               <span className="font-mono font-medium text-foreground">
-                {typeof entry.value === 'number' 
-                  ? entry.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) 
+                {typeof entry.value === "number"
+                  ? entry.value.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })
                   : entry.value}
               </span>
             </div>

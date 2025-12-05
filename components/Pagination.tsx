@@ -28,7 +28,6 @@ export function Pagination({ currentPage, totalPages, baseUrl, searchParams }: P
   // Generate page numbers to display
   const getPageNumbers = () => {
     const pages = [];
-    const showMax = 5; // Max number of page buttons to show
     
     // Always include first, last, current, and neighbors
     for (let i = 1; i <= totalPages; i++) {

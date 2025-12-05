@@ -25,7 +25,15 @@ export default async function AppDashboard({
     .from("bots")
     .select('*', { count: 'exact', head: true });
 
-  let bots: any[] = [];
+  interface Bot {
+    id: string;
+    name: string;
+    description: string;
+    system: string;
+    avatar_url: string | null;
+  }
+
+  let bots: Bot[] = [];
   let totalCount = 0;
 
   if (totalDbBots && totalDbBots > 0) {
