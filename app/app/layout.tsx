@@ -46,6 +46,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           return envEmails.includes(normalizedEmail);
         };
 
+        // Check if user is explicitly exempt from the paywall (non-admin testers, etc.)
+        const isPaywallExemptEmail = (email: string | undefined): boolean => {
+          if (!email) return false;
+          const normalizedEmail = email.toLowerCase().trim();
+
+          const raw =
+            process.env.NEXT_PUBLIC_PAYWALL_EXEMPT_EMAILS &&
+            process.env.NEXT_PUBLIC_PAYWALL_EXEMPT_EMAILS.length > 0
+              ? process.env.NEXT_PUBLIC_PAYWALL_EXEMPT_EMAILS
+              : [
+                  process.env.NEXT_PUBLIC_PAYWALL_EXEMPT_EMAIL,
+                  process.env.NEXT_PUBLIC_PAYWALL_EXEMPT_EMAIL_2,
+                ]
+                  .filter(Boolean)
+                  .join(",");
+
+          const envEmails: string[] = raw
+            .split(",")
+            .map((s) => (s || "").trim().toLowerCase())
+            .filter((s) => s.length > 0);
+
+          return envEmails.includes(normalizedEmail);
+        };
+
         // Check admin database
         const { data: adminData } = await supabase
           .from("app_admins")
@@ -54,10 +78,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           .maybeSingle();
 
         const userIsAdmin = isAdminEmail(user.email) || Boolean(adminData);
+        const userIsPaywallExempt = isPaywallExemptEmail(user.email);
 
-
-        if (userIsAdmin) {
-          
+        if (userIsAdmin || userIsPaywallExempt) {
           setShowModal(false);
           setIsChecking(false);
           return;

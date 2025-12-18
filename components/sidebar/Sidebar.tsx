@@ -33,9 +33,8 @@ export default async function Sidebar({
     user?.email?.split("@")[0] ||
     "User";
   const email = user?.email || "user@example.com";
-  const avatar =
-    profile?.avatar_url ||
-    `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(email)}`;
+  // Only use stored avatar URLs for now; NavUser will show initials fallback otherwise.
+  const avatar = profile?.avatar_url || "";
 
   return (
     <aside className="border-r flex flex-col h-svh">

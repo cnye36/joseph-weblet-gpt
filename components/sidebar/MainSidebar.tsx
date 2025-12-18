@@ -6,10 +6,11 @@ import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { NavUser } from "@/components/sidebar/NavUser";
-import { Home, Settings } from "lucide-react";
+import { Home, Settings, Trophy } from "lucide-react";
 import GPTsAccordion from "@/components/sidebar/GPTsAccordion";
 import { bots as staticBots } from "@/lib/bots";
 import SubscriptionCountdown from "@/components/sidebar/SubscriptionCountdown";
+import ActiveCompetitionsBadge from "@/components/sidebar/ActiveCompetitionsBadge";
 
 export default async function MainSidebar() {
   const supabase = await createClient();
@@ -33,9 +34,8 @@ export default async function MainSidebar() {
     user?.email?.split("@")[0] ||
     "User";
   const email = user?.email || "user@example.com";
-  const avatar =
-    profile?.avatar_url ||
-    `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(email)}`;
+  // Only use stored avatar URLs for now; NavUser will show initials fallback otherwise.
+  const avatar = profile?.avatar_url || "";
 
   // Fetch all bots from database
   const { data: dbBots } = await supabase
@@ -80,6 +80,15 @@ export default async function MainSidebar() {
                 <Link href="/app">
                   <Home className="size-4" />
                   <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/app/competitions">
+                  <Trophy className="size-4" />
+                  <span>Competitions</span>
+                  <ActiveCompetitionsBadge />
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

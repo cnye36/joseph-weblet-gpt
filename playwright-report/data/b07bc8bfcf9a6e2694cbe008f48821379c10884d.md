@@ -1,0 +1,179 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - link "Back to Competitions" [ref=e6] [cursor=pointer]:
+            - /url: /app/admin/competitions
+            - img [ref=e7]
+            - text: Back to Competitions
+          - generic [ref=e9]: Create New Competition
+        - generic [ref=e10]:
+          - generic [ref=e11]: Failed to create competition
+          - generic [ref=e12]:
+            - heading "Basic Information" [level=2] [ref=e13]
+            - generic [ref=e14]:
+              - generic [ref=e15]: Bot/Weblet *
+              - combobox [ref=e16]:
+                - option "Select a bot..."
+                - option "Agrobacterium-Mediated Gene Transfer"
+                - option "AlphaFold"
+                - option "Bacterial DNA Palindromic Repeats Identifier"
+                - option "Bayesian Optimization"
+                - option "Bio‑Inspired Industrial Design"
+                - option "Biomarkers & Genetic Signatures"
+                - option "Biomimicry"
+                - option "Biosafety Levels (BSL)"
+                - option "BioScale"
+                - option "Biotech Risk Assessment Hypothesis"
+                - option "Carbon Accounting"
+                - option "Cell Type Annotations"
+                - option "Chirality"
+                - option "Cosmetic Formulation & Development"
+                - option "DESIGN OF EXPERIMENTS WEBLETT"
+                - option "Diagram and Flow Chart Tester - (TEST)"
+                - option "DNA Amplicon Analyzer"
+                - option "DNA BARCODE GENERATOR"
+                - option "DNA Folding and Structural Dynamics Prediction"
+                - option "DNA Sequence Validation and Optimization"
+                - option "Dual USE Identification & Research Support"
+                - option "Epidemiological Modelling"
+                - option "Fluorogenic Amino Acid Design & Synthesis"
+                - option "Ganttrify Pro - Advanced Gantt Chart Generator"
+                - option "Gene Editing algorithms"
+                - option "Gene Function Identifier"
+                - option "Gene-Phenotype Mapping"
+                - option "Genetic Codon Chart"
+                - option "Genetic Sequence Geometric Representation"
+                - option "Genomic Surveillance"
+                - option "gRNA Designer"
+                - option "In Silico Drug Design Algorithm"
+                - option "Journal Impact Factor"
+                - option "Logistics Expert - Test"
+                - option "Microbial Biochemistry GPT"
+                - option "Microbial Strain Engineering"
+                - option "Microbial Trait Analyser"
+                - option "Microbiome-Tailored Probiotics Designer"
+                - option "mRNA"
+                - option "Mutation Analysis"
+                - option "Organic Chemistry AI Specialist"
+                - option "Periodic Table Chemistry"
+                - option "Phylogenetics Analyst"
+                - option "Plasmid Construct GPT"
+                - option "Polymerase Chain Reactions"
+                - option "Population Genetics"
+                - option "Primer Designer"
+                - option "Principal Investigator"
+                - option "Protein Domain or Motif Prediction"
+                - option "Protein Expression"
+                - option "Protein Target Affinity Weblet"
+                - option "Research Article to Poster Converter" [selected]
+                - option "Research Gap Analysis"
+                - option "Research Gap Identifier"
+                - option "Research Gaps Analysis"
+                - option "Research Methodology Designer"
+                - option "Sample Size Determination"
+                - option "Statistical Genomics"
+                - option "Synthetic DNA"
+                - option "Synthetic Organism Design"
+                - option "THEOREM PROVING WEBLET"
+                - option "Vulnerability Scoring Weblet"
+              - paragraph [ref=e17]: Which bot will participants use for this competition?
+            - generic [ref=e18]:
+              - generic [ref=e19]: Title *
+              - textbox "Scientific Poster Excellence Challenge" [ref=e20]: Competition to Delete
+            - generic [ref=e21]:
+              - generic [ref=e22]: Description *
+              - textbox "Describe the competition..." [ref=e23]: To be deleted
+            - generic [ref=e24]:
+              - generic [ref=e25]: Banner Image URL
+              - textbox "https://example.com/banner.jpg" [ref=e26]
+          - generic [ref=e27]:
+            - heading "Rules & Instructions" [level=2] [ref=e28]
+            - generic [ref=e29]:
+              - generic [ref=e30]: Rules
+              - textbox "1. Use only the specified bot 2. Submit your final output and all prompts 3. Maximum 3 submissions per participant" [ref=e31]
+            - generic [ref=e32]:
+              - generic [ref=e33]: Instructions
+              - textbox "Step-by-step instructions for participants..." [ref=e34]
+          - generic [ref=e35]:
+            - heading "Timeline & Status" [level=2] [ref=e36]
+            - generic [ref=e37]:
+              - generic [ref=e38]:
+                - generic [ref=e39]: Status *
+                - combobox [ref=e40]:
+                  - option "Draft" [selected]
+                  - option "Active"
+                  - option "Closed"
+                  - option "Judging"
+                  - option "Completed"
+              - generic [ref=e41]:
+                - generic [ref=e42]: Max Submissions Per User
+                - spinbutton [ref=e43]: "3"
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - generic [ref=e46]: Start Date *
+                - textbox [ref=e47]: 2025-12-17
+              - generic [ref=e48]:
+                - generic [ref=e49]: End Date *
+                - textbox [ref=e50]: 2025-12-17
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - generic [ref=e53]: Submission Deadline *
+                - textbox [ref=e54]: 2025-12-17
+              - generic [ref=e55]:
+                - generic [ref=e56]: Results Date
+                - textbox [ref=e57]
+          - generic [ref=e58]:
+            - heading "Rewards" [level=2] [ref=e59]
+            - generic [ref=e60]:
+              - generic [ref=e61]: Reward Description
+              - textbox "$500 for 1st place, $300 for 2nd place, $200 for 3rd place..." [ref=e62]
+            - generic [ref=e63]:
+              - generic [ref=e64]: Top Winners Count
+              - spinbutton [ref=e65]: "10"
+              - paragraph [ref=e66]: How many top submissions receive rewards?
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - heading "Baseline Evaluation" [level=2] [ref=e69]
+              - paragraph [ref=e70]: Provide an example of good submissions. This is visible to all participants.
+            - generic [ref=e71]:
+              - generic [ref=e72]: Baseline Title
+              - 'textbox "Example: High-Quality Submission" [ref=e73]'
+            - generic [ref=e74]:
+              - generic [ref=e75]: Baseline Description
+              - textbox "Describe what makes a good submission..." [ref=e76]
+            - generic [ref=e77]:
+              - generic [ref=e78]: Example Prompts
+              - textbox "Example prompts that produce good results..." [ref=e79]
+            - generic [ref=e80]:
+              - generic [ref=e81]: Baseline Output (JSON)
+              - 'textbox "{\"type\": \"chart\", \"data\": {...}}" [ref=e82]'
+              - paragraph [ref=e83]: JSON representation of the baseline output
+            - generic [ref=e84]:
+              - generic [ref=e85]: Evaluation Notes
+              - textbox "What makes a good submission? Key criteria to focus on..." [ref=e86]
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - heading "Evaluation Criteria" [level=2] [ref=e90]
+              - paragraph [ref=e91]: Define how submissions will be scored
+            - button "Add Criterion" [ref=e92]:
+              - img [ref=e93]
+              - text: Add Criterion
+          - generic [ref=e95]:
+            - heading "Sponsors" [level=2] [ref=e96]
+            - button "Add Sponsor" [ref=e97]:
+              - img [ref=e98]
+              - text: Add Sponsor
+          - generic [ref=e99]:
+            - button "Create Competition" [ref=e100]:
+              - img [ref=e101]
+              - text: Create Competition
+            - button "Cancel" [ref=e105]
+  - button "Open Next.js Dev Tools" [ref=e111] [cursor=pointer]:
+    - img [ref=e112]
+  - alert [ref=e115]
+```

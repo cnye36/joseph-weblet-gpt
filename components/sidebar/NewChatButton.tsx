@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
 import { defaultBotId, bots, type BotId } from "@/lib/bots";
@@ -8,6 +8,7 @@ import { defaultBotId, bots, type BotId } from "@/lib/bots";
 export default function NewChatButton() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
 
   const handleNewChat = useCallback(async () => {
@@ -46,21 +47,30 @@ export default function NewChatButton() {
       }
       
       const title = "New chat";
+      const competitionId = searchParams.get("competitionId");
       const res = await fetch("/api/chats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ botId: bot, title }),
+        body: JSON.stringify({
+          botId: bot,
+          title,
+          competitionId: competitionId || undefined,
+        }),
       });
       if (!res.ok) return;
       const data = (await res.json()) as { id: string };
 
       // Navigate to the new chat - the Chat component will handle title generation
       // when the first message is sent
-      router.replace(`/app/chat/${bot}?chat=${data.id}&new=true`);
+      const params = new URLSearchParams();
+      params.set("chat", data.id);
+      params.set("new", "true");
+      if (competitionId) params.set("competitionId", competitionId);
+      router.replace(`/app/chat/${bot}?${params.toString()}`);
     } finally {
       setLoading(false);
     }
-  }, [loading, pathname, router]);
+  }, [loading, pathname, router, searchParams]);
 
   return (
     <Button onClick={handleNewChat} disabled={loading} className="w-full mb-4">

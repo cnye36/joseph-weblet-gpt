@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { bots as staticBots } from "@/lib/bots";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import MainSidebar from "@/components/sidebar/MainSidebar";
 import AppBotList from "@/components/AppBotList";
+import FeaturedCompetitions from "@/components/FeaturedCompetitions";
+import AppHeader from "@/components/header/AppHeader";
 
 export default async function AppDashboard({
   searchParams,
@@ -19,6 +19,18 @@ export default async function AppDashboard({
 
   const supabase = await createClient();
   await isAdmin();
+
+  // Fetch active competitions
+  const { data: activeCompetitions } = await supabase
+    .from("competitions")
+    .select(`
+      *,
+      sponsors:competition_sponsors(*),
+      submission_count:competition_submissions(count)
+    `)
+    .eq("status", "active")
+    .order("start_date", { ascending: false })
+    .limit(3);
 
   // Check if DB has any bots
   const { count: totalDbBots } = await supabase
@@ -49,7 +61,7 @@ export default async function AppDashboard({
      const { data, count } = await query
         .order("id")
         .range(from, to);
-     
+
      bots = data || [];
      totalCount = count || 0;
   } else {
@@ -61,11 +73,11 @@ export default async function AppDashboard({
           system: b.system,
           avatar_url: null,
         }));
-     
-     const filtered = search 
+
+     const filtered = search
         ? allStatic.filter(b => b.name.toLowerCase().includes(search.toLowerCase()))
         : allStatic;
-     
+
      totalCount = filtered.length;
      bots = filtered.slice(from, from + limit);
   }
@@ -73,9 +85,15 @@ export default async function AppDashboard({
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
-    <SidebarProvider>
-      <MainSidebar />
-      <SidebarInset>
+    <>
+      <AppHeader />
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 via-purple-50 to-white">
+        {/* Featured Competitions Section */}
+        {activeCompetitions && activeCompetitions.length > 0 && (
+          <FeaturedCompetitions competitions={activeCompetitions} />
+        )}
+
+        {/* Main Content */}
         <div className="p-8">
           <header className="max-w-5xl mx-auto mb-8">
             <div className="text-center">
@@ -90,7 +108,7 @@ export default async function AppDashboard({
           </header>
           <AppBotList bots={bots} currentPage={page} totalPages={totalPages} />
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </>
   );
 }

@@ -27,6 +27,7 @@ export default function Chat({
   const chatIdRef = useRef<string | null>(chatId);
 
   const isNewChat = searchParams.get("new") === "true";
+  const competitionId = searchParams.get("competitionId");
   useEffect(() => {
     chatIdRef.current = chatId;
   }, [chatId]);
@@ -55,6 +56,36 @@ export default function Chat({
 
   const [enableSimulation, setEnableSimulation] = useState(false);
   const [enableArxiv, setEnableArxiv] = useState(false);
+
+  // Competition submission state
+  const [competitionTitle, setCompetitionTitle] = useState<string | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Load competition details (for nicer copy) when working in competition context
+  useEffect(() => {
+    if (!competitionId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/competitions/${competitionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data?.competition?.title) {
+          setCompetitionTitle(String(data.competition.title));
+        }
+      } catch {
+        // Best-effort only; safe to ignore
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [competitionId]);
 
   const {
     messages,
@@ -203,6 +234,56 @@ export default function Chat({
         };
         reader.readAsDataURL(file);
       }
+    }
+  };
+
+  const handleSubmitToCompetition = async () => {
+    if (!competitionId) return;
+
+    const currentChatId = chatIdRef.current;
+    if (!currentChatId) {
+      setSubmitError(
+        "Please send at least one message in this chat before submitting."
+      );
+      setSubmitSuccess(false);
+      return;
+    }
+
+    setSubmitLoading(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    try {
+      const fallbackTitle = competitionTitle
+        ? `${competitionTitle} – Chat Submission`
+        : "Competition Chat Submission";
+
+      const res = await fetch(
+        `/api/competitions/${competitionId}/submissions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: fallbackTitle,
+            chat_id: currentChatId,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to submit to competition.");
+      }
+
+      setSubmitSuccess(true);
+      router.refresh();
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to submit to competition."
+      );
+      setSubmitSuccess(false);
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -462,6 +543,39 @@ export default function Chat({
             </div>
           </div>
 
+          {competitionId && (
+            <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="font-semibold">
+                    Submit this chat to {competitionTitle ?? "the competition"}
+                  </div>
+                  <p className="text-[11px] text-blue-800/80">
+                    When you are satisfied with the current result, click submit
+                    to create a competition entry from this chat.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSubmitToCompetition}
+                  disabled={submitLoading}
+                  className="h-7 px-3 text-xs"
+                >
+                  {submitLoading ? "Submitting..." : "Submit to competition"}
+                </Button>
+              </div>
+              {submitError && (
+                <div className="text-[11px] text-red-600">{submitError}</div>
+              )}
+              {submitSuccess && !submitError && (
+                <div className="text-[11px] text-green-700">
+                  Submission created. You can review it on the competition page.
+                </div>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="mb-2 p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-between gap-2">
               <span>{error.message}</span>
@@ -502,16 +616,33 @@ export default function Chat({
                   body: JSON.stringify({
                     botId,
                     title: userInput.slice(0, 60),
+                    competitionId: competitionId || undefined,
                   }),
                 });
                 const data = (await res.json()) as { id: string };
                 currentChatId = data.id;
                 chatIdRef.current = currentChatId;
-                router.replace(`/app/chat/${botId}?chat=${currentChatId}`);
+                router.replace(
+                  `/app/chat/${botId}?${(() => {
+                    const params = new URLSearchParams();
+                    params.set("chat", currentChatId as string);
+                    if (competitionId)
+                      params.set("competitionId", competitionId);
+                    return params.toString();
+                  })()}`
+                );
                 shouldGenerateTitle = true;
               } else if (isNewChat) {
                 shouldGenerateTitle = true;
-                router.replace(`/app/chat/${botId}?chat=${currentChatId}`);
+                router.replace(
+                  `/app/chat/${botId}?${(() => {
+                    const params = new URLSearchParams();
+                    params.set("chat", currentChatId as string);
+                    if (competitionId)
+                      params.set("competitionId", competitionId);
+                    return params.toString();
+                  })()}`
+                );
               }
 
               if (shouldGenerateTitle) {

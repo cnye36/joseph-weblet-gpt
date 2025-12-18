@@ -1,0 +1,139 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - navigation "Global" [ref=e3]:
+      - link "Weblet GPT Logo Weblet GPT" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img "Weblet GPT Logo" [ref=e6]
+        - generic [ref=e7]: Weblet GPT
+      - generic [ref=e8]:
+        - link "Features" [ref=e9] [cursor=pointer]:
+          - /url: /features
+        - link "Pricing" [ref=e10] [cursor=pointer]:
+          - /url: /pricing
+      - generic [ref=e11]:
+        - link "Sign in" [ref=e12] [cursor=pointer]:
+          - /url: /login
+        - link "Sign up" [ref=e13] [cursor=pointer]:
+          - /url: /signup
+          - text: Sign Up
+  - generic [ref=e16]:
+    - textbox "you@example.com" [ref=e17]: cnye36@gmail.com
+    - textbox "Password" [active] [ref=e18]: Zoeybug3636!@$
+    - button "Sign in" [ref=e19] [cursor=pointer]
+    - generic [ref=e20]:
+      - text: No account?
+      - link "Sign up" [ref=e21] [cursor=pointer]:
+        - /url: /signup
+  - contentinfo [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e27]: Weblet GPT
+        - paragraph [ref=e28]: Fully operational AI assistants for research, planning, and technical workflows.
+      - generic [ref=e29]:
+        - generic [ref=e30]: Product
+        - list [ref=e31]:
+          - listitem [ref=e32]:
+            - link "App" [ref=e33] [cursor=pointer]:
+              - /url: /app
+          - listitem [ref=e34]:
+            - link "Create account" [ref=e35] [cursor=pointer]:
+              - /url: /signup
+          - listitem [ref=e36]:
+            - link "Sign in" [ref=e37] [cursor=pointer]:
+              - /url: /login
+      - generic [ref=e38]:
+        - generic [ref=e39]: Company
+        - list [ref=e40]:
+          - listitem [ref=e41]:
+            - link "Privacy" [ref=e42] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e43]:
+            - link "Terms" [ref=e44] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e45]:
+            - link "Contact" [ref=e46] [cursor=pointer]:
+              - /url: "#"
+    - generic [ref=e48]:
+      - generic [ref=e49]: © 2025 Weblet GPT. All rights reserved.
+      - generic [ref=e50]: Built with care.
+  - generic:
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - navigation [ref=e56]:
+            - button "previous" [disabled] [ref=e57]:
+              - img "previous" [ref=e58]
+            - generic [ref=e60]:
+              - generic [ref=e61]: 1/
+              - text: "1"
+            - button "next" [disabled] [ref=e62]:
+              - img "next" [ref=e63]
+          - img
+        - generic [ref=e65]:
+          - link "Next.js 15.5.7 (outdated) Turbopack" [ref=e66] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e67]
+            - generic "An outdated version detected (latest is 16.0.10), upgrade is highly recommended!" [ref=e69]: Next.js 15.5.7 (outdated)
+            - generic [ref=e70]: Turbopack
+          - img
+      - dialog "Build Error" [ref=e72]:
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e79]: Build Error
+              - generic [ref=e80]:
+                - button "Copy Error Info" [ref=e81] [cursor=pointer]:
+                  - img [ref=e82]
+                - button "No related documentation found" [disabled] [ref=e84]:
+                  - img [ref=e85]
+                - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e87] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                  - img [ref=e88]
+            - paragraph [ref=e97]: Parsing ecmascript source code failed
+          - generic [ref=e99]:
+            - generic [ref=e101]:
+              - img [ref=e103]
+              - generic [ref=e106]: ./components/competitions/CompetitionLeaderboard.tsx (247:66)
+              - button "Open in editor" [ref=e107] [cursor=pointer]:
+                - img [ref=e109]
+            - generic [ref=e112]:
+              - generic [ref=e113]: Parsing ecmascript source code failed
+              - generic [ref=e114]: 245 |
+              - text: Evaluator Feedback
+              - generic [ref=e115]: 246 |
+              - text: </div> >
+              - generic [ref=e116]: 247 |
+              - generic [ref=e117]: "{entry"
+              - text: ".submission.evaluations.map((eval:"
+              - generic [ref=e118]: any)
+              - text: =>
+              - generic [ref=e119]: (
+              - generic [ref=e120]: "|"
+              - text: ^^^^^^^^^
+              - generic [ref=e121]: 248 |
+              - text: <div
+              - generic [ref=e122]: 249 |
+              - generic [ref=e123]: key
+              - text: "={eval."
+              - generic [ref=e124]: "id}"
+              - generic [ref=e125]: 250 |
+              - generic [ref=e126]: className
+              - text: =
+              - generic [ref=e127]: "\"text-sm text-gray-600 mb-2 last:mb-0\""
+              - generic [ref=e128]: "'eval' and 'arguments' cannot be used as a binding identifier in strict mode Import trace: Server Component: ./components/competitions/CompetitionLeaderboard.tsx ./app/app/competitions/[id]/page.tsx"
+        - generic [ref=e129]:
+          - generic [ref=e130]: "1"
+          - generic [ref=e131]: "2"
+    - generic [ref=e136] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e137]:
+        - img [ref=e138]
+      - button "Open issues overlay" [ref=e142]:
+        - generic [ref=e143]:
+          - generic [ref=e144]: "0"
+          - generic [ref=e145]: "1"
+        - generic [ref=e146]: Issue
+  - alert [ref=e147]
+```

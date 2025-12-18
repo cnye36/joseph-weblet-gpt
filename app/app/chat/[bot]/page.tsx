@@ -2,8 +2,7 @@ import { bots, defaultBotId, type BotId } from "@/lib/bots";
 import { createClient } from "@/lib/supabase/server";
 import Chat from "@/components/chat/Chat";
 import ChatSidebar from "@/components/sidebar/ChatSidebar";
-import MainSidebar from "@/components/sidebar/MainSidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import AppHeader from "@/components/header/AppHeader";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 
@@ -12,10 +11,10 @@ export default async function ChatBotScopedPage({
   searchParams,
 }: {
   params: Promise<{ bot: string }>;
-  searchParams: Promise<{ chat?: string }>;
+  searchParams: Promise<{ chat?: string; competitionId?: string }>;
 }) {
   const { bot: rawBot } = await params;
-  const { chat: chatParam } = await searchParams;
+  const { chat: chatParam, competitionId } = await searchParams;
 
   // Check if bot exists in static bots or database
   let botExists = rawBot && rawBot in bots;
@@ -43,9 +42,13 @@ export default async function ChatBotScopedPage({
   const selectedBot = botExists ? (rawBot as BotId) : defaultBotId;
 
   if (!botExists) {
-    const to = `/app/chat/${selectedBot}${
-      chatParam ? `?chat=${chatParam}` : ""
-    }`;
+    const to = `/app/chat/${selectedBot}${(() => {
+      const params = new URLSearchParams();
+      if (chatParam) params.set("chat", chatParam);
+      if (competitionId) params.set("competitionId", competitionId);
+      const query = params.toString();
+      return query ? `?${query}` : "";
+    })()}`;
     redirect(to);
   }
 
@@ -53,22 +56,20 @@ export default async function ChatBotScopedPage({
   const bot = botData || bots[selectedBot];
 
   return (
-    <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
-      <MainSidebar />
-      <SidebarInset>
-        <div className="flex h-full overflow-hidden">
-          <div className="flex-shrink-0 h-full overflow-hidden">
-            <ChatSidebar selectedBot={rawBot} />
-          </div>
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <BotHeader botId={selectedBot} fallbackName={bot.name} />
-            <div className="flex-1 min-h-0">
-              <Chat botId={rawBot} chatId={chatId} />
-            </div>
+    <div className="h-screen flex flex-col overflow-hidden">
+      <AppHeader />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-shrink-0 h-full overflow-hidden border-r bg-white">
+          <ChatSidebar selectedBot={rawBot} />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <BotHeader botId={selectedBot} fallbackName={bot.name} />
+          <div className="flex-1 min-h-0">
+            <Chat botId={rawBot} chatId={chatId} />
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </div>
   );
 }
 

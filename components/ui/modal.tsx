@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 
 type ModalProps = {
   open: boolean;
@@ -19,7 +20,13 @@ export default function Modal({
   dismissable = true,
   size = "md",
 }: ModalProps) {
-  if (!open) return null;
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!open || !mounted) return null;
 
   const sizeClasses = {
     sm: "max-w-md",
@@ -28,8 +35,8 @@ export default function Modal({
     xl: "max-w-4xl",
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  const content = (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/50"
         onClick={() => {
@@ -48,6 +55,8 @@ export default function Modal({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }
 
 
