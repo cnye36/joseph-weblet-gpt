@@ -36,6 +36,12 @@ export default async function Header() {
             Features
           </Link>
           <Link
+            href="/competitions"
+            className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
+          >
+            Competitions
+          </Link>
+          <Link
             href="/pricing"
             className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
           >
