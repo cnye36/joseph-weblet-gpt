@@ -680,9 +680,9 @@ export default function Chat({
                 }
               }
 
-              // Save user message to DB
+              // Save user message to DB without blocking the chat request
               if (currentChatId) {
-                await fetch("/api/messages", {
+                void fetch("/api/messages", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
