@@ -24,7 +24,7 @@ export default async function ChatSidebar({
   if (!user) return null;
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-full min-h-0 overflow-hidden">
       <Sidebar collapsible="none" className="w-80 border-r h-full">
         <SidebarHeader className="flex-shrink-0">
           <div className="px-2 py-1">
