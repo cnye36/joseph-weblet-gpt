@@ -59,7 +59,7 @@ export default async function ChatBotScopedPage({
     <div className="h-screen flex flex-col overflow-hidden">
       <AppHeader />
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-shrink-0 h-full overflow-hidden border-r bg-white">
+        <div className="flex-shrink-0 h-full min-h-0 overflow-hidden border-r bg-white">
           <ChatSidebar selectedBot={rawBot} />
         </div>
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -128,5 +128,4 @@ async function BotHeader({
     </div>
   );
 }
-
 
