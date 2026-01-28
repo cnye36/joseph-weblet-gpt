@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import Footer from "@/components/site/Footer";
@@ -68,91 +68,32 @@ function PricingContent() {
           <div className="mx-auto max-w-7xl">
             <div className="text-center mb-12">
               <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl bg-clip-text text-transparent bg-[image:var(--gradient)]">
-                Choose Your Plan
+                Weblet GPT is currently free
               </h1>
               <p className="mt-6 text-xl text-neutral-700 max-w-3xl mx-auto leading-relaxed">
-                Get started with Weblet GPT. Choose the plan that works best for
-                you.
+                For the foreseeable future, all features of Weblet GPT are
+                available at no cost. You just need an account to start using
+                everything.
               </p>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
-              {/* One-Day Pass */}
-              <Card className="p-8 relative flex flex-col h-full">
-                <div className="space-y-4 flex flex-col flex-1">
-                  <div>
-                    <h3 className="text-2xl font-bold">One-Day Pass</h3>
-                    <p className="text-4xl font-bold mt-2">$5.00</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      One-time payment
-                    </p>
-                  </div>
-                  <ul className="space-y-3">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>24 hours of full access</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>All premium features</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>Perfect for trying out</span>
-                    </li>
-                  </ul>
-                  <div className="mt-auto pt-4">
-                    <Button asChild className="w-full">
-                      <Link href="/signup">
-                        Get Started <ArrowRight className="ml-2 w-4 h-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Monthly Subscription */}
-              <Card className="p-8 relative border-2 border-primary flex flex-col h-full">
-                <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded">
-                  POPULAR
-                </div>
-                <div className="space-y-4 flex flex-col flex-1">
-                  <div>
-                    <h3 className="text-2xl font-bold">Premium Plan</h3>
-                    <p className="text-4xl font-bold mt-2">$25.00</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      per month
-                    </p>
-                  </div>
-                  <ul className="space-y-3">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>Unlimited conversations</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>Priority support</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>Advanced AI features</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>No ads</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                      <span>Cancel anytime</span>
-                    </li>
-                  </ul>
-                  <div className="mt-auto pt-4">
-                    <Button asChild className="w-full">
-                      <Link href="/signup">
-                        Subscribe Now <ArrowRight className="ml-2 w-4 h-4" />
-                      </Link>
-                    </Button>
-                  </div>
+            <div className="max-w-3xl mx-auto">
+              <Card className="p-8">
+                <h2 className="text-2xl font-bold mb-4 text-center">
+                  No payment required
+                </h2>
+                <p className="text-sm sm:text-base text-neutral-700 text-center mb-6">
+                  We&apos;ve turned off billing and subscriptions for now. You
+                  can sign up and use all previously premium features without
+                  entering any payment details.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button asChild>
+                    <Link href="/signup">Create a free account</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/login">Sign in</Link>
+                  </Button>
                 </div>
               </Card>
             </div>

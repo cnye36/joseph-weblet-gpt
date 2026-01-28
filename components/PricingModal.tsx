@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, ArrowRight, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { IS_FREE_MODE } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -36,7 +37,7 @@ export default function PricingModal({
   const [showPayPalButtons, setShowPayPalButtons] = useState(false);
   const [showOneDayButtons, setShowOneDayButtons] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"day" | "monthly" | null>(
-    null
+    null,
   );
   const [notice, setNotice] = useState<{
     open: boolean;
@@ -59,7 +60,7 @@ export default function PricingModal({
 
   function unloadPayPalSDK() {
     const existing = document.querySelector(
-      'script[src*="www.paypal.com/sdk/js"]'
+      'script[src*="www.paypal.com/sdk/js"]',
     ) as HTMLScriptElement | null;
     if (existing) existing.remove();
     if ("paypal" in window) {
@@ -111,7 +112,7 @@ export default function PricingModal({
 
   const renderPayPalButtons = useCallback(() => {
     const paypalContainer = document.getElementById(
-      "modal-paypal-button-container"
+      "modal-paypal-button-container",
     );
     if (!paypalContainer || !window.paypal) return;
 
@@ -127,12 +128,12 @@ export default function PricingModal({
         },
         createSubscription: function (
           data: Record<string, unknown>,
-          actions: Record<string, unknown>
+          actions: Record<string, unknown>,
         ) {
           const planId = paypalPlanId || process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID;
           if (!planId) {
             throw new Error(
-              "PayPal plan ID not configured. Please set up your PayPal subscription first."
+              "PayPal plan ID not configured. Please set up your PayPal subscription first.",
             );
           }
           return (
@@ -174,7 +175,7 @@ export default function PricingModal({
                 existingSubscription.plan_name === "One-Day Pass";
               if (isDayPass && existingSubscription.next_billing_date) {
                 const expiryDate = new Date(
-                  existingSubscription.next_billing_date
+                  existingSubscription.next_billing_date,
                 );
                 const now = new Date();
                 if (expiryDate < now) {
@@ -211,7 +212,7 @@ export default function PricingModal({
               status: "active",
               amount: 25.0,
               next_billing_date: new Date(
-                Date.now() + 30 * 24 * 60 * 60 * 1000
+                Date.now() + 30 * 24 * 60 * 60 * 1000,
               ).toISOString(),
             });
 
@@ -265,7 +266,7 @@ export default function PricingModal({
 
   const renderOneDayButtons = useCallback(() => {
     const container = document.getElementById(
-      "modal-paypal-one-day-button-container"
+      "modal-paypal-one-day-button-container",
     );
     if (!container || !window.paypal) return;
 
@@ -281,7 +282,7 @@ export default function PricingModal({
         },
         createOrder: function (
           _data: Record<string, unknown>,
-          actions: Record<string, unknown>
+          actions: Record<string, unknown>,
         ) {
           return (
             actions as unknown as {
@@ -299,7 +300,7 @@ export default function PricingModal({
         },
         onApprove: async function (
           _data: Record<string, unknown>,
-          actions: Record<string, unknown>
+          actions: Record<string, unknown>,
         ) {
           try {
             const details = await (
@@ -337,7 +338,7 @@ export default function PricingModal({
                 existingSubscription.plan_name === "One-Day Pass";
               if (isDayPass && existingSubscription.next_billing_date) {
                 const expiryDate = new Date(
-                  existingSubscription.next_billing_date
+                  existingSubscription.next_billing_date,
                 );
                 const now = new Date();
                 if (expiryDate < now) {
@@ -378,7 +379,7 @@ export default function PricingModal({
               status: "active",
               amount: 5.0,
               next_billing_date: new Date(
-                Date.now() + 24 * 60 * 60 * 1000
+                Date.now() + 24 * 60 * 60 * 1000,
               ).toISOString(),
             });
 
@@ -517,7 +518,7 @@ export default function PricingModal({
         // If user is admin and modal is required, force reload to clear modal state
         if (userIsAdmin && required) {
           console.log(
-            "Admin detected in PricingModal - preventing modal display"
+            "Admin detected in PricingModal - preventing modal display",
           );
           // Force reload to clear the modal state from parent
           window.location.reload();
@@ -545,8 +546,47 @@ export default function PricingModal({
     }
   }, [open, required, onClose]);
 
+  // If modal isn't open, don't render anything
+  if (!open) return null;
+
+  // In free mode, show a simple informational modal instead of any payment UI.
+  if (IS_FREE_MODE) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={required ? undefined : onClose}
+        />
+        <div className="relative z-10 w-full max-w-xl rounded-lg bg-white p-6 shadow-xl">
+          {!required && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-center">
+              Weblet GPT is currently free
+            </h2>
+            <p className="text-center text-neutral-700">
+              All features are unlocked and completely free for now. You
+              don&apos;t need a subscription or any payment to use the app.
+            </p>
+            <div className="flex justify-center pt-2">
+              <Button onClick={required && !onClose ? undefined : onClose}>
+                Continue to app
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Don't show modal if user is admin
-  if (!open || isAdmin === true) return null;
+  if (isAdmin === true) return null;
 
   // Show loading state while checking admin status
   if (open && isAdmin === null) {

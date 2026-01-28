@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { IS_FREE_MODE } from "@/lib/utils";
 
 type Subscription = {
   id: string;
@@ -25,6 +26,14 @@ export function useSubscription() {
   }, []);
 
   async function loadSubscription() {
+    // In free mode we don't need to hit the database for subscription checks
+    if (IS_FREE_MODE) {
+      setSubscription(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -59,7 +68,9 @@ export function useSubscription() {
     }
   }
 
-  const hasActiveSubscription = !!subscription && subscription.status === "active";
+  // In free mode, everyone is effectively premium.
+  const hasActiveSubscription =
+    IS_FREE_MODE || (!!subscription && subscription.status === "active");
 
   const isPremium = hasActiveSubscription;
 
@@ -72,4 +83,3 @@ export function useSubscription() {
     refresh: loadSubscription,
   };
 }
-

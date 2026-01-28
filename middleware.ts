@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { CookieOptions, createServerClient } from '@supabase/ssr';
+import { IS_FREE_MODE } from "@/lib/utils";
 
 // Timeout for database operations in middleware (5 seconds)
 const DB_TIMEOUT_MS = 5000;
@@ -49,7 +50,7 @@ export async function middleware(req: NextRequest) {
             res.cookies.set({ name, value: "", ...options });
           },
         },
-      }
+      },
     );
 
     // Wrap getUser in timeout and error handling
@@ -63,7 +64,7 @@ export async function middleware(req: NextRequest) {
       // The app will handle auth checks at the page level
       console.warn(
         "Middleware: Auth check timed out or failed, allowing request:",
-        error
+        error,
       );
       return res;
     }
@@ -73,6 +74,25 @@ export async function middleware(req: NextRequest) {
       req.nextUrl.pathname.startsWith("/login") ||
       req.nextUrl.pathname.startsWith("/signup");
     const isAppRoute = req.nextUrl.pathname.startsWith("/app");
+
+    // In free mode we keep basic auth protection (login required for /app)
+    // but bypass all subscription/paywall logic.
+    if (IS_FREE_MODE) {
+      // Redirect unauthenticated users trying to access app routes
+      if (!isAuthed && isAppRoute) {
+        const redirectUrl = new URL("/login", req.url);
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      // Redirect authenticated users away from auth routes straight into the app
+      if (isAuthed && isAuthRoute) {
+        const redirectUrl = new URL("/app", req.url);
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      // Otherwise allow request through without any subscription checks
+      return res;
+    }
 
     // Redirect unauthenticated users trying to access app routes
     if (!isAuthed && isAppRoute) {
@@ -100,14 +120,14 @@ export async function middleware(req: NextRequest) {
           }>;
           const { data: adminData } = await withTimeout(
             adminQueryPromise,
-            DB_TIMEOUT_MS
+            DB_TIMEOUT_MS,
           );
           userIsAdmin = Boolean(adminData);
         } catch (error) {
           // On timeout, assume not admin - user will be checked at page level
           console.warn(
             "Middleware: Admin check timed out, allowing request:",
-            error
+            error,
           );
         }
       }
@@ -134,7 +154,7 @@ export async function middleware(req: NextRequest) {
         }>;
         const { data: subscription } = await withTimeout(
           subscriptionQueryPromise,
-          DB_TIMEOUT_MS
+          DB_TIMEOUT_MS,
         );
 
         if (subscription) {
@@ -155,7 +175,7 @@ export async function middleware(req: NextRequest) {
         // On timeout, allow request - subscription check will happen at page level
         console.warn(
           "Middleware: Subscription check timed out, allowing request:",
-          error
+          error,
         );
       }
     }

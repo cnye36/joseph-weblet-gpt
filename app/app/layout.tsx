@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PricingModal from "@/components/PricingModal";
+import { IS_FREE_MODE } from "@/lib/utils";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showModal, setShowModal] = useState(false);
@@ -11,6 +12,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function checkSubscription() {
+      // In free mode we skip all subscription checks and never show the paywall.
+      if (IS_FREE_MODE) {
+        setShowModal(false);
+        setIsChecking(false);
+        return;
+      }
+
       try {
         const {
           data: { user },

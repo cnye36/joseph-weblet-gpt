@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSidebar } from "@/components/ui/sidebar";
+import { IS_FREE_MODE } from "@/lib/utils";
 
 export default function SubscriptionCountdown() {
   const { state } = useSidebar();
@@ -56,7 +57,7 @@ export default function SubscriptionCountdown() {
           setTimeLeft(
             `${hours.toString().padStart(2, "0")}:${minutes
               .toString()
-              .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+              .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
           );
         };
 
@@ -83,6 +84,11 @@ export default function SubscriptionCountdown() {
       }
     };
   }, [supabase]);
+
+  // In free mode we don&apos;t show any countdown UI.
+  if (IS_FREE_MODE) {
+    return null;
+  }
 
   if (loading || !timeLeft || state === "collapsed") {
     return null;

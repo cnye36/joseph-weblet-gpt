@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, CreditCard, CheckCircle2, ArrowUpRight } from "lucide-react";
+import { IS_FREE_MODE } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -400,6 +401,15 @@ export default function BillingSettings() {
 
   return (
     <div className="space-y-6">
+      {IS_FREE_MODE && (
+        <Card className="p-4 border-emerald-200 bg-emerald-50">
+          <p className="text-sm text-emerald-900">
+            Weblet GPT is currently{" "}
+            <span className="font-semibold">100% free</span>. Billing is paused
+            and you don&apos;t need a subscription to use any features.
+          </p>
+        </Card>
+      )}
       {notice.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -474,7 +484,7 @@ export default function BillingSettings() {
                       <p className="text-sm text-muted-foreground">
                         Expires:{" "}
                         {new Date(
-                          subscription.next_billing_date
+                          subscription.next_billing_date,
                         ).toLocaleDateString("en-US", {
                           timeZone: "UTC",
                           year: "numeric",
@@ -483,7 +493,7 @@ export default function BillingSettings() {
                         })}{" "}
                         at{" "}
                         {new Date(
-                          subscription.next_billing_date
+                          subscription.next_billing_date,
                         ).toLocaleTimeString("en-US", {
                           timeZone: "UTC",
                           hour: "2-digit",
@@ -502,7 +512,7 @@ export default function BillingSettings() {
                       <p className="text-sm text-muted-foreground">
                         Next billing date:{" "}
                         {new Date(
-                          subscription.next_billing_date
+                          subscription.next_billing_date,
                         ).toLocaleDateString()}
                       </p>
                     </>
@@ -545,16 +555,10 @@ export default function BillingSettings() {
               </div>
               <div>
                 <h4 className="font-semibold mb-1">No Active Plan</h4>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Subscribe to unlock premium features and support development.
+                <p className="text-sm text-muted-foreground">
+                  All features are currently available for free. You don&apos;t
+                  need a plan right now.
                 </p>
-                <Button
-                  onClick={() => {
-                    window.location.href = "/pricing";
-                  }}
-                >
-                  View Plans
-                </Button>
               </div>
             </div>
           </Card>

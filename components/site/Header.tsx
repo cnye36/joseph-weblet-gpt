@@ -22,9 +22,11 @@ export default async function Header() {
               className="rounded-full shadow"
               priority
             />
-            <span className="text-lg sm:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-[image:var(--gradient)]">
-              Weblet GPT
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-lg sm:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-[image:var(--gradient)]">
+                Weblet GPT
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -45,7 +47,7 @@ export default async function Header() {
             href="/pricing"
             className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
           >
-            Pricing
+            Free access
           </Link>
         </div>
 
@@ -57,7 +59,7 @@ export default async function Header() {
           </Button>
           <Button asChild size="sm">
             <Link href="/signup" aria-label="Sign up">
-              Sign Up
+              Get Started
             </Link>
           </Button>
         </div>
@@ -65,5 +67,4 @@ export default async function Header() {
     </header>
   );
 }
-
 
