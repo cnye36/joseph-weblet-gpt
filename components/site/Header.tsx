@@ -26,6 +26,9 @@ export default async function Header() {
               <span className="text-lg sm:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-[image:var(--gradient)]">
                 Weblet GPT
               </span>
+              <span className="hidden sm:inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5 border border-emerald-200">
+                Now free
+              </span>
             </div>
           </Link>
         </div>

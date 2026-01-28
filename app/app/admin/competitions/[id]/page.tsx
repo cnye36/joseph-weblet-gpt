@@ -1,8 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { ArrowLeft, Edit, Users, FileText } from "lucide-react";
+import { ArrowLeft, Edit, FileText } from "lucide-react";
 import CompetitionForm from "@/components/admin/CompetitionForm";
 import CompetitionEvaluator, {
   type CompetitionEvaluationSubmission,
@@ -25,16 +24,18 @@ export default async function AdminEditCompetitionPage({
   // Use admin client to bypass RLS and see all competitions
   const supabaseAdmin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   // Fetch competition
   const { data: competition, error } = await supabaseAdmin
     .from("competitions")
-    .select(`
+    .select(
+      `
       *,
       sponsors:competition_sponsors(*)
-    `)
+    `,
+    )
     .eq("id", id)
     .single();
 
@@ -63,11 +64,13 @@ export default async function AdminEditCompetitionPage({
   // Fetch submissions
   const { data: submissionsRaw } = await supabaseAdmin
     .from("competition_submissions")
-    .select(`
+    .select(
+      `
       *,
       user:auth.users!user_id(email),
       evaluations:competition_evaluations(*)
-    `)
+    `,
+    )
     .eq("competition_id", id)
     .order("submitted_at", { ascending: false });
 
@@ -84,9 +87,7 @@ export default async function AdminEditCompetitionPage({
           <ArrowLeft className="w-4 h-4" />
           Back to Competitions
         </Link>
-        <div className="text-lg font-medium">
-          {competition.title}
-        </div>
+        <div className="text-lg font-medium">{competition.title}</div>
       </div>
 
       {/* Tabs */}
@@ -118,7 +119,9 @@ export default async function AdminEditCompetitionPage({
       </div>
 
       {/* Tab Content */}
-      {tab === "edit" && <CompetitionForm bots={bots || []} competition={competition} />}
+      {tab === "edit" && (
+        <CompetitionForm bots={bots || []} competition={competition} />
+      )}
 
       {tab === "submissions" && (
         <CompetitionEvaluator

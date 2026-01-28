@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { LogOut, User, ChevronDown, CreditCard } from "lucide-react";
+import { User, ChevronDown, CreditCard } from "lucide-react";
 import LogoutButton from "@/components/sidebar/LogoutButton";
 import SettingsModal from "@/components/settings/SettingsModal";
 

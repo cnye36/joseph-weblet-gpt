@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
-import { Home, Trophy, Settings, ChevronDown } from "lucide-react";
+import { Home, Trophy, Settings } from "lucide-react";
 import { bots as staticBots } from "@/lib/bots";
 import ActiveCompetitionsBadge from "@/components/sidebar/ActiveCompetitionsBadge";
 import HeaderUserMenu from "./HeaderUserMenu";

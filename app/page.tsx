@@ -459,7 +459,9 @@ function TestimonialCard({ name, quote }: { name: string; quote: string }) {
   return (
     <Card className="border-neutral-200 h-full flex flex-col">
       <CardContent className="p-6 flex-1 flex flex-col">
-        <p className="text-base text-neutral-800 leading-relaxed">"{quote}"</p>
+        <p className="text-base text-neutral-800 leading-relaxed">
+          &ldquo;{quote}&rdquo;
+        </p>
         <div className="mt-6 text-sm font-semibold text-neutral-900">
           {name}
         </div>

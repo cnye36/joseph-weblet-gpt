@@ -134,13 +134,16 @@ export default function CompetitionLeaderboard({ competitionId }: Props) {
       </div>
 
       <div className="divide-y">
-        {leaderboard.map((entry, index) => {
+        {leaderboard.map((entry) => {
           const isExpanded = expandedId === entry.submission_id;
           const rankIcon = getRankIcon(entry.rank);
           const rankBadge = getRankBadge(entry.rank, entry.is_winner);
 
           return (
-            <div key={entry.submission_id} className="hover:bg-gray-50 transition-colors">
+            <div
+              key={entry.submission_id}
+              className="hover:bg-gray-50 transition-colors"
+            >
               <div className="p-4">
                 <div className="flex items-center gap-4">
                   {/* Rank */}
@@ -176,7 +179,7 @@ export default function CompetitionLeaderboard({ competitionId }: Props) {
                           {formatDistance(
                             new Date(entry.submitted_at),
                             new Date(),
-                            { addSuffix: true }
+                            { addSuffix: true },
                           )}
                         </div>
                       </div>
@@ -258,32 +261,36 @@ export default function CompetitionLeaderboard({ competitionId }: Props) {
                               <div className="text-xs font-medium text-gray-700 mb-2">
                                 Evaluator Feedback
                               </div>
-                              {entry.submission.evaluations.map((evaluation) => (
-                                <div
-                                  key={evaluation.id}
-                                  className="text-sm text-gray-600 mb-2 last:mb-0"
-                                >
-                                  {evaluation.feedback && (
-                                    <div className="mb-1">{evaluation.feedback}</div>
-                                  )}
-                                  {evaluation.strengths && (
-                                    <div className="text-xs text-green-700">
-                                      <span className="font-medium">
-                                        Strengths:
-                                      </span>{" "}
-                                      {evaluation.strengths}
-                                    </div>
-                                  )}
-                                  {evaluation.areas_for_improvement && (
-                                    <div className="text-xs text-amber-700">
-                                      <span className="font-medium">
-                                        Areas for improvement:
-                                      </span>{" "}
-                                      {evaluation.areas_for_improvement}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                              {entry.submission.evaluations.map(
+                                (evaluation) => (
+                                  <div
+                                    key={evaluation.id}
+                                    className="text-sm text-gray-600 mb-2 last:mb-0"
+                                  >
+                                    {evaluation.feedback && (
+                                      <div className="mb-1">
+                                        {evaluation.feedback}
+                                      </div>
+                                    )}
+                                    {evaluation.strengths && (
+                                      <div className="text-xs text-green-700">
+                                        <span className="font-medium">
+                                          Strengths:
+                                        </span>{" "}
+                                        {evaluation.strengths}
+                                      </div>
+                                    )}
+                                    {evaluation.areas_for_improvement && (
+                                      <div className="text-xs text-amber-700">
+                                        <span className="font-medium">
+                                          Areas for improvement:
+                                        </span>{" "}
+                                        {evaluation.areas_for_improvement}
+                                      </div>
+                                    )}
+                                  </div>
+                                ),
+                              )}
                             </div>
                           )}
                       </div>

@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -13,17 +12,19 @@ export default async function AdminCompetitionsPage() {
   // Use admin client to bypass RLS and see all competitions
   const supabaseAdmin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   // Fetch all competitions for admin view
   const { data: competitions } = await supabaseAdmin
     .from("competitions")
-    .select(`
+    .select(
+      `
       *,
       sponsors:competition_sponsors(count),
       submissions:competition_submissions(count)
-    `)
+    `,
+    )
     .order("created_at", { ascending: false });
 
   return (
